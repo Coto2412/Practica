@@ -1,72 +1,116 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from "./navbar";
-import axios from 'axios'; 
+import axios from 'axios';
+import Swal from 'sweetalert2';
 
-const AluTitulos = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [estudiantes, setEstudiantes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const API_URL = 'http://localhost:5000/api';
-
-  useEffect(() => {
-    fetchProyectos();
-  }, []);
-
-  const fetchProyectos = async () => {
-    try {
+const AdminProfesores = () => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [profesores, setProfesores] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+  
+    const API_URL = 'http://localhost:5000/api';
+  
+    useEffect(() => {
+      fetchProfesores();
+    }, []);
+  
+    const fetchProfesores = async () => {
+      try {
         setLoading(true);
-        const response = await axios.get(`${API_URL}/proyectos`);
+        const response = await axios.get(`${API_URL}/profesores`);
         if (response.data.status === 'success') {
-            
-            const transformedData = response.data.data.map(item => ({
-                id: item.id, 
-                name: item.estudiante,
-                email: item.correo,
-                projectTitle: item.proyecto_titulo,
-                profesorGuia: item.profesor_guia,
-                profesorInformante: item.profesor_informante
-            }));
-            setEstudiantes(transformedData);
+          setProfesores(response.data.data);
         }
-    } catch (err) {
-        setError('Error al cargar los proyectos');
+      } catch (err) {
+        setError('Error al cargar los profesores');
         console.error('Error:', err);
-    } finally {
+      } finally {
         setLoading(false);
+      }
+    };
+  
+    const handleAddProfesor = async () => {
+      const { value: formValues } = await Swal.fire({
+        title: 'Agregar nuevo profesor',
+        html: `
+          <input id="nombre" class="swal2-input" placeholder="Nombre">
+          <input id="apellido" class="swal2-input" placeholder="Apellido">
+          <input id="email" class="swal2-input" placeholder="Correo electrónico">
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        cancelButtonText: 'Cancelar',
+        confirmButtonText: 'Guardar',
+        preConfirm: () => {
+          const nombre = document.getElementById('nombre').value;
+          const apellido = document.getElementById('apellido').value;
+          const email = document.getElementById('email').value;
+          
+          if (!nombre || !apellido || !email) {
+            Swal.showValidationMessage('Por favor complete todos los campos');
+            return false;
+          }
+          
+          if (!email.includes('@')) {
+            Swal.showValidationMessage('Por favor ingrese un correo electrónico válido');
+            return false;
+          }
+          
+          return { nombre, apellido, email };
+        }
+      });
+  
+      if (formValues) {
+        try {
+          const response = await axios.post(`${API_URL}/profesores`, formValues);
+          
+          if (response.data.status === 'success') {
+            await Swal.fire({
+              icon: 'success',
+              title: '¡Éxito!',
+              text: 'Profesor agregado correctamente',
+            });
+            fetchProfesores();
+          }
+        } catch (error) {
+          const errorMessage = error.response?.data?.error || 'Error al agregar el profesor';
+          await Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: errorMessage,
+          });
+        }
+      }
+    };
+  
+
+  const handleDelete = async (id) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este profesor?')) {
+      try {
+        const response = await axios.delete(`${API_URL}/profesores/${id}`);
+        if (response.data.status === 'success') {
+          fetchProfesores();
+          alert('Profesor eliminado exitosamente');
+        }
+      } catch (err) {
+        console.error('Error al eliminar:', err);
+        const errorMessage = err.response?.data?.error || 'Error al eliminar el profesor';
+        alert(errorMessage);
+      }
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este proyecto?')) {
-        try {
-            const response = await axios.delete(`${API_URL}/proyectos/${id}`);
-            if (response.data.status === 'success') {
-                fetchProyectos(); 
-                alert('Proyecto eliminado exitosamente');
-            }
-        } catch (err) {
-            console.error('Error al eliminar:', err);
-
-            const errorMessage = err.response?.data?.error || 'Error al eliminar el proyecto';
-            alert(errorMessage);
-        }
-    }
-};
-
-  const filteredEstudiantes = estudiantes.filter(estudiante =>
-    estudiante.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    estudiante.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    estudiante.projectTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    estudiante.profesorGuia.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    estudiante.profesorInformante.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProfesores = profesores.filter(profesor =>
+    profesor.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    profesor.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    profesor.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl font-semibold text-gray-600">Cargando proyectos...</div>
+        <div className="text-xl font-semibold text-gray-600">Cargando profesores...</div>
       </div>
     );
   }
@@ -91,12 +135,12 @@ const AluTitulos = () => {
       >
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl p-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-8">Proyectos de Título</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-8">Administración de Profesores</h2>
             
             <div className="mb-6">
               <input
                 type="text"
-                placeholder="🔍 Buscar por estudiante, profesor o proyecto..."
+                placeholder="🔍 Buscar por nombre, apellido o correo..."
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -108,19 +152,19 @@ const AluTitulos = () => {
                 <thead className="bg-blue-200">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Estudiante
+                      Nombre
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Apellido
                     </th>
                     <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Correo
                     </th>
                     <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Proyecto de título
+                      Proyectos Guiados
                     </th>
                     <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Profesor Guía
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Profesor Informante
+                      Proyectos Informados
                     </th>
                     <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Acciones
@@ -128,28 +172,28 @@ const AluTitulos = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredEstudiantes.map((estudiante) => (
-                    <tr key={estudiante.id} className="hover:bg-gray-50">
+                  {filteredProfesores.map((profesor) => (
+                    <tr key={profesor.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {estudiante.name}
+                        {profesor.nombre}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {profesor.apellido}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {estudiante.email}
+                        {profesor.email}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {estudiante.projectTitle}
+                      <td className="px-6 py-4 text-center text-sm text-gray-500">
+                        {profesor.proyectos_guiados || 0}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {estudiante.profesorGuia}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {estudiante.profesorInformante}
+                        <td className="px-6 py-4 text-center text-sm text-gray-500">
+                        {profesor.proyectos_informados || 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
                           <button 
                             className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors duration-200"
-                            onClick={() => window.location.href = `/proyecto/${estudiante.id}`}
+                            onClick={() => window.location.href = `/profesor/${profesor.id}`}
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -159,7 +203,7 @@ const AluTitulos = () => {
                           </button>
                           <button 
                             className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors duration-200"
-                            onClick={() => window.location.href = `/proyecto/editar/${estudiante.id}`}
+                            onClick={() => window.location.href = `/profesor/editar/${profesor.id}`}
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -168,7 +212,7 @@ const AluTitulos = () => {
                           </button>
                           <button 
                             className="inline-flex items-center px-3 py-1.5 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors duration-200"
-                            onClick={() => handleDelete(estudiante.id)}
+                            onClick={() => handleDelete(profesor.id)}
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -182,15 +226,15 @@ const AluTitulos = () => {
                 </tbody>
               </table>
             </div>
+
             <div className="mt-6 flex justify-end">
               <button 
-                className="inline-flex items-center px-4 py-2 bg-green-200 text-green-700 rounded-md hover:bg-green-200 transition-colors duration-200"
-                onClick={() => window.location.href = '/NuevoProyecto'}
-              >
+                onClick={handleAddProfesor}
+                className="inline-flex items-center px-4 py-2 bg-green-200 text-green-700 rounded-md hover:bg-green-200 transition-colors duration-200">
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
-                Agregar proyecto de título
+                Agregar profesor
               </button>
             </div>
           </div>
@@ -200,4 +244,4 @@ const AluTitulos = () => {
   );
 };
 
-export default AluTitulos;
+export default AdminProfesores;

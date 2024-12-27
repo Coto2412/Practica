@@ -46,6 +46,53 @@ class Secretaria(db.Model):
             'apellido': self.apellido,
             'email': self.email
         }
+        
+class Estudiante(db.Model):
+    __tablename__ = 'estudiantes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    apellido = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'nombre': self.nombre,
+            'apellido': self.apellido,
+            'email': self.email
+        }
+
+class Profesor(db.Model):
+    __tablename__ = 'profesores'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    apellido = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'nombre': self.nombre,
+            'apellido': self.apellido,
+            'email': self.email
+        }
+
+class Proyecto(db.Model):
+    __tablename__ = 'proyectos'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    titulo = db.Column(db.String(200), nullable=False)
+    descripcion = db.Column(db.Text)
+    estudiante_id = db.Column(db.Integer, db.ForeignKey('estudiantes.id'), nullable=False)
+    profesor_guia_id = db.Column(db.Integer, db.ForeignKey('profesores.id'), nullable=False)
+    profesor_informante_id = db.Column(db.Integer, db.ForeignKey('profesores.id'), nullable=False)
+    
+    # Relaciones
+    estudiante = db.relationship('Estudiante', foreign_keys=[estudiante_id])
+    profesor_guia = db.relationship('Profesor', foreign_keys=[profesor_guia_id])
+    profesor_informante = db.relationship('Profesor', foreign_keys=[profesor_informante_id])
 
 @app.route('/api/registro/secretaria', methods=['POST'])
 def registrar_secretaria():
@@ -128,6 +175,161 @@ def login_secretaria():
         }), 200
         
     except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+        
+@app.route('/api/proyectos', methods=['GET'])
+def obtener_proyectos():
+    try:
+        proyectos = Proyecto.query.all()
+        
+        resultado = []
+        for proyecto in proyectos:
+            proyecto_info = {
+                'id': proyecto.id,  # Se añade el ID real del proyecto
+                'estudiante': f"{proyecto.estudiante.nombre} {proyecto.estudiante.apellido}",
+                'correo': proyecto.estudiante.email,
+                'proyecto_titulo': proyecto.titulo,
+                'profesor_guia': f"{proyecto.profesor_guia.nombre} {proyecto.profesor_guia.apellido}",
+                'profesor_informante': f"{proyecto.profesor_informante.nombre} {proyecto.profesor_informante.apellido}"
+            }
+            resultado.append(proyecto_info)
+            
+        return jsonify({
+            'data': resultado,
+            'status': 'success'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+        
+@app.route('/api/proyectos/<int:id>', methods=['DELETE'])
+def eliminar_proyecto(id):
+    try:
+        proyecto = Proyecto.query.get_or_404(id)
+        
+        db.session.delete(proyecto)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Proyecto eliminado exitosamente',
+            'status': 'success'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        error_message = str(e)
+
+        return jsonify({
+            'error': f'Error al eliminar el proyecto: {error_message}',
+            'status': 'error'
+        }), 500
+        
+@app.route('/api/profesores', methods=['GET'])
+def obtener_profesores():
+    try:
+        profesores = Profesor.query.all()
+        
+        resultado = []
+        for profesor in profesores:
+            
+            proyectos_guiados = Proyecto.query.filter_by(profesor_guia_id=profesor.id).count()
+            proyectos_informados = Proyecto.query.filter_by(profesor_informante_id=profesor.id).count()
+            
+            profesor_info = {
+                'id': profesor.id,
+                'nombre': profesor.nombre,
+                'apellido': profesor.apellido,
+                'email': profesor.email,
+                'proyectos_guiados': proyectos_guiados,
+                'proyectos_informados': proyectos_informados
+            }
+            resultado.append(profesor_info)
+            
+        return jsonify({
+            'data': resultado,
+            'status': 'success'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+
+@app.route('/api/profesores', methods=['POST'])
+def crear_profesor():
+    try:
+        data = request.get_json()
+        
+        # Valida campos requeridos
+        required_fields = ['nombre', 'apellido', 'email']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'error': f'El campo {field} es requerido',
+                    'status': 'error'
+                }), 400
+        
+        # Verifica si el email ya existe
+        if Profesor.query.filter_by(email=data['email']).first():
+            return jsonify({
+                'error': 'El email ya está registrado',
+                'status': 'error'
+            }), 400
+        
+        # Crear nuevo profesor
+        nuevo_profesor = Profesor(
+            nombre=data['nombre'],
+            apellido=data['apellido'],
+            email=data['email']
+        )
+        
+        db.session.add(nuevo_profesor)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Profesor creado exitosamente',
+            'profesor': nuevo_profesor.to_dict(),
+            'status': 'success'
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+        
+@app.route('/api/profesores/<int:id>', methods=['DELETE'])
+def eliminar_profesor(id):
+    try:
+        profesor = Profesor.query.get_or_404(id)
+        
+        proyectos_guiados = Proyecto.query.filter_by(profesor_guia_id=profesor.id).first()
+        proyectos_informados = Proyecto.query.filter_by(profesor_informante_id=profesor.id).first()
+        
+        if proyectos_guiados or proyectos_informados:
+            return jsonify({
+                'error': 'No se puede eliminar el profesor porque tiene proyectos asociados',
+                'status': 'error'
+            }), 400
+            
+        db.session.delete(profesor)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Profesor eliminado exitosamente',
+            'status': 'success'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
         return jsonify({
             'error': str(e),
             'status': 'error'
