@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from './navbar';
 import axios from 'axios';
+import Swal from 'sweetalert2'; // Importa SweetAlert2
 
 const NuevoProyecto = () => {
   const navigate = useNavigate();
@@ -55,12 +56,23 @@ const NuevoProyecto = () => {
     try {
       const response = await axios.post('http://localhost:5000/api/proyectos', formData);
       if (response.data.status === 'success') {
-        alert('Proyecto creado exitosamente');
-        navigate('/ProyectosTitulo');
+        Swal.fire({
+          title: '¡Éxito!',
+          text: 'Proyecto creado exitosamente',
+          icon: 'success',
+          confirmButtonText: 'Aceptar'
+        }).then(() => {
+          navigate('/ProyectosTitulo');
+        });
       }
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Error al crear el proyecto';
-      alert(errorMessage);
+      Swal.fire({
+        title: 'Error',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonText: 'Aceptar'
+      });
     }
   };
 

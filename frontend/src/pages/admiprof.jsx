@@ -218,21 +218,38 @@ const AdminProfesores = () => {
     };
   
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este profesor?')) {
-      try {
-        const response = await axios.delete(`${API_URL}/profesores/${id}`);
-        if (response.data.status === 'success') {
-          fetchProfesores();
-          alert('Profesor eliminado exitosamente');
+    const handleDelete = async (id) => {
+        const result = await Swal.fire({
+            title: '¿Estás seguro?',
+            text: 'No podrás revertir esto',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+        });
+    
+        if (result.isConfirmed) {
+            try {
+                const response = await axios.delete(`${API_URL}/profesores/${id}`);
+                if (response.data.status === 'success') {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Eliminado',
+                        text: 'El profesor ha sido eliminado con éxito',
+                    });
+                    fetchProfesores(); 
+                }
+            } catch (err) {
+                console.error('Error al eliminar:', err);
+                const errorMessage = err.response?.data?.error || 'Error al eliminar el profesor';
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: errorMessage,
+                });
+            }
         }
-      } catch (err) {
-        console.error('Error al eliminar:', err);
-        const errorMessage = err.response?.data?.error || 'Error al eliminar el profesor';
-        alert(errorMessage);
-      }
-    }
-  };
+    };
 
   const filteredProfesores = profesores.filter(profesor =>
     profesor.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from './navbar';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 
 const EditarProyecto = () => {
   const { id } = useParams();
@@ -67,12 +68,22 @@ const EditarProyecto = () => {
     try {
       const response = await axios.put(`http://localhost:5000/api/proyectos/${id}`, formData);
       if (response.data.status === 'success') {
-        alert('Proyecto actualizado exitosamente');
+        await Swal.fire({
+          title: '¡Éxito!',
+          text: 'Proyecto actualizado exitosamente',
+          icon: 'success',
+          confirmButtonText: 'Aceptar'
+        });
         navigate('/ProyectosTitulo');
       }
     } catch (err) {
       const errorMessage = err.response?.data?.error || 'Error al actualizar el proyecto';
-      alert(errorMessage);
+      Swal.fire({
+        title: 'Error',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonText: 'Aceptar'
+      });
     }
   };
 
@@ -95,17 +106,17 @@ const EditarProyecto = () => {
   return (
     <div>
       <Navbar />
-      <div className="min-h-screen bg-gray-100 py-10"
+      <div
+        className="min-h-screen bg-gray-100 py-10"
         style={{
           backgroundImage: 'url("/img/uct.png")',
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundPosition: 'center'
         }}
       >
         <div className="max-w-3xl mx-auto px-4 py-16">
           <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl p-8">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">Editar Proyecto de Título</h2>
-            
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

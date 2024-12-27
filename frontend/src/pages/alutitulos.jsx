@@ -93,21 +93,44 @@ const AluTitulos = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar este proyecto?')) {
-        try {
-            const response = await axios.delete(`${API_URL}/proyectos/${id}`);
-            if (response.data.status === 'success') {
-                fetchProyectos(); 
-                alert('Proyecto eliminado exitosamente');
-            }
-        } catch (err) {
-            console.error('Error al eliminar:', err);
-
-            const errorMessage = err.response?.data?.error || 'Error al eliminar el proyecto';
-            alert(errorMessage);
+    // Mostrar alerta de confirmación con Swal
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: "¡No podrás revertir esta acción!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    });
+  
+    if (result.isConfirmed) {
+      try {
+        const response = await axios.delete(`${API_URL}/proyectos/${id}`);
+        if (response.data.status === 'success') {
+          await Swal.fire({
+            icon: 'success',
+            title: 'Eliminado',
+            text: 'El proyecto ha sido eliminado exitosamente.',
+            confirmButtonColor: '#3085d6',
+          });
+          fetchProyectos(); 
+        } else {
+          throw new Error(response.data.message || 'Error desconocido');
         }
+      } catch (err) {
+        console.error('Error al eliminar:', err);
+        const errorMessage = err.response?.data?.error || 'Error al eliminar el proyecto';
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMessage,
+          confirmButtonColor: '#3085d6',
+        });
+      }
     }
-};
+  };
 
   const filteredEstudiantes = estudiantes.filter(estudiante =>
     estudiante.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
