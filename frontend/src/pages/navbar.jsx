@@ -1,14 +1,20 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
-  // Lista de rutas
   const links = [
     { path: "/ProyectosTitulo", label: "Proyectos de Título" },
     { path: "/AdminProfesores", label: "Administrar Profesores" },
   ];
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/');  // Redirige a la ruta raíz donde está el Login
+  };
 
   return (
     <nav className="flex justify-between items-center bg-[#4EB5F5] p-6 shadow-md">
@@ -33,7 +39,10 @@ const Navbar = () => {
         ))}
       </div>
       <div className="flex space-x-4">
-        <button className="flex items-center space-x-2 bg-[#1C03FF] text-white px-5 py-2 rounded-full hover:opacity-60">
+        <button 
+          onClick={handleLogout}
+          className="flex items-center space-x-2 bg-[#1C03FF] text-white px-5 py-2 rounded-full hover:opacity-60"
+        >
           Cerrar sesión
         </button>
       </div>

@@ -83,6 +83,139 @@ const AdminProfesores = () => {
         }
       }
     };
+
+    const handleEditProfesor = async (profesor) => {
+        const { value: formValues } = await Swal.fire({
+            title: 'Editar Profesor',
+            html: `
+                <input id="nombre" class="swal2-input" placeholder="Nombre" value="${profesor.nombre}" />
+                <input id="apellido" class="swal2-input" placeholder="Apellido" value="${profesor.apellido}" />
+                <input id="email" class="swal2-input" placeholder="Correo electrónico" value="${profesor.email}" />
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            cancelButtonText: 'Cancelar',
+            confirmButtonText: 'Guardar',
+            preConfirm: () => {
+                const nombre = document.getElementById('nombre').value;
+                const apellido = document.getElementById('apellido').value;
+                const email = document.getElementById('email').value;
+
+                if (!nombre || !apellido || !email) {
+                    Swal.showValidationMessage('Por favor complete todos los campos');
+                    return false;
+                }
+
+                if (!email.includes('@')) {
+                    Swal.showValidationMessage('Por favor ingrese un correo electrónico válido');
+                    return false;
+                }
+
+                return { nombre, apellido, email };
+            }
+        });
+
+        if (formValues) {
+            try {
+                const response = await axios.put(`${API_URL}/profesores/${profesor.id}`, formValues);
+
+                if (response.data.status === 'success') {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: 'Profesor actualizado correctamente',
+                    });
+                    fetchProfesores();
+                }
+            } catch (error) {
+                const errorMessage = error.response?.data?.error || 'Error al actualizar el profesor';
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: errorMessage,
+                });
+            }
+        }
+    };
+
+    const handleViewProfesor = async (id) => {
+        try {
+            const response = await axios.get(`${API_URL}/profesores/${id}/detalle`);
+            if (response.data.status === 'success') {
+                const profesor = response.data.profesor;
+                
+                // Crea el contenido HTML para los proyectos guiados
+                const proyectosGuiadosHTML = profesor.proyectos_guiados.map(p => `
+                    <div class="mb-4 p-4 bg-blue-50 rounded-lg">
+                        <h4 class="font-semibold">${p.titulo}</h4>
+                        <p class="text-sm text-gray-600">${p.descripcion}</p>
+                        <p class="text-sm mt-2">
+                            <span class="font-medium">Estudiante:</span> ${p.estudiante}
+                            <br>
+                            <span class="font-medium">Email:</span> ${p.estudiante_email}
+                        </p>
+                    </div>
+                `).join('') || '<p class="text-gray-500">No hay proyectos guiados</p>';
+    
+                // Crea el contenido HTML para los proyectos informados
+                const proyectosInformadosHTML = profesor.proyectos_informados.map(p => `
+                    <div class="mb-4 p-4 bg-green-50 rounded-lg">
+                        <h4 class="font-semibold">${p.titulo}</h4>
+                        <p class="text-sm text-gray-600">${p.descripcion}</p>
+                        <p class="text-sm mt-2">
+                            <span class="font-medium">Estudiante:</span> ${p.estudiante}
+                            <br>
+                            <span class="font-medium">Email:</span> ${p.estudiante_email}
+                        </p>
+                    </div>
+                `).join('') || '<p class="text-gray-500">No hay proyectos informados</p>';
+    
+                await Swal.fire({
+                    title: `${profesor.nombre} ${profesor.apellido}`,
+                    html: `
+                        <div class="text-left">
+                            <p class="mb-4">
+                                <span class="font-medium">Email:</span> ${profesor.email}
+                            </p>
+                            
+                            <div class="mb-6">
+                                <h3 class="text-lg font-semibold mb-3 text-blue-600">
+                                    Proyectos Guiados (${profesor.total_proyectos_guiados})
+                                </h3>
+                                <div class="max-h-60 overflow-y-auto">
+                                    ${proyectosGuiadosHTML}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 class="text-lg font-semibold mb-3 text-green-600">
+                                    Proyectos Informados (${profesor.total_proyectos_informados})
+                                </h3>
+                                <div class="max-h-60 overflow-y-auto">
+                                    ${proyectosInformadosHTML}
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    width: '700px',
+                    showCloseButton: true,
+                    showConfirmButton: false,
+                    customClass: {
+                        container: 'swal-wide',
+                        popup: 'swal-tall',
+                        content: 'swal-content'
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo cargar la información del profesor'
+            });
+        }
+    };
   
 
   const handleDelete = async (id) => {
@@ -193,7 +326,7 @@ const AdminProfesores = () => {
                         <div className="flex justify-end space-x-2">
                           <button 
                             className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors duration-200"
-                            onClick={() => window.location.href = `/profesor/${profesor.id}`}
+                            onClick={() => handleViewProfesor(profesor.id)}
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -203,7 +336,7 @@ const AdminProfesores = () => {
                           </button>
                           <button 
                             className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors duration-200"
-                            onClick={() => window.location.href = `/profesor/editar/${profesor.id}`}
+                            onClick={() => handleEditProfesor(profesor)}
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

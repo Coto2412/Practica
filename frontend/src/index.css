@@ -1,3 +1,15 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.custom-swal-container {
+    z-index: 9999;
+  }
+  
+  .custom-swal-popup {
+    padding: 1.5rem;
+  }
+  
+  .custom-swal-content {
+    text-align: left;
+  }

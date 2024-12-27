@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from "./navbar";
 import axios from 'axios'; 
+import Swal from 'sweetalert2';
 
 const AluTitulos = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,6 +36,59 @@ const AluTitulos = () => {
         console.error('Error:', err);
     } finally {
         setLoading(false);
+    }
+  };
+
+  const handleView = async (id) => {
+    try {
+      const response = await axios.get(`${API_URL}/proyectos/${id}`);
+      if (response.data.status === 'success') {
+        const proyecto = response.data.proyecto;
+        
+        // Obtener los detalles del estudiante y profesores
+        const estudiante = estudiantes.find(e => e.id === id);
+        
+        Swal.fire({
+          title: 'Detalles del Proyecto',
+          html: `
+            <div class="text-left">
+              <div class="mb-4">
+                <h3 class="text-lg font-semibold text-blue-600">Información del Proyecto</h3>
+                <p><strong>Título:</strong> ${proyecto.titulo}</p>
+                <p><strong>Descripción:</strong> ${proyecto.descripcion || 'No disponible'}</p>
+              </div>
+              
+              <div class="mb-4">
+                <h3 class="text-lg font-semibold text-blue-600">Estudiante</h3>
+                <p><strong>Nombre:</strong> ${estudiante.name}</p>
+                <p><strong>Email:</strong> ${estudiante.email}</p>
+              </div>
+              
+              <div class="mb-4">
+                <h3 class="text-lg font-semibold text-blue-600">Profesores</h3>
+                <p><strong>Profesor Guía:</strong> ${estudiante.profesorGuia}</p>
+                <p><strong>Profesor Informante:</strong> ${estudiante.profesorInformante}</p>
+              </div>
+            </div>
+          `,
+          width: '600px',
+          confirmButtonText: 'Cerrar',
+          confirmButtonColor: '#3085d6',
+          customClass: {
+            container: 'custom-swal-container',
+            popup: 'custom-swal-popup',
+            content: 'custom-swal-content'
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Error al obtener detalles:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudieron cargar los detalles del proyecto',
+        confirmButtonColor: '#3085d6'
+      });
     }
   };
 
@@ -147,19 +201,19 @@ const AluTitulos = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
-                          <button 
+                        <button 
                             className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors duration-200"
-                            onClick={() => window.location.href = `/proyecto/${estudiante.id}`}
+                            onClick={() => handleView(estudiante.id)}
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
                             Ver
-                          </button>
+                        </button>
                           <button 
                             className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors duration-200"
-                            onClick={() => window.location.href = `/proyecto/editar/${estudiante.id}`}
+                            onClick={() => window.location.href = `/EditarProyecto/${estudiante.id}`}
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
