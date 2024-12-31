@@ -8,12 +8,13 @@ const Navbar = () => {
   const links = [
     { path: "/ProyectosTitulo", label: "Proyectos de Título" },
     { path: "/AdminProfesores", label: "Administrar Profesores" },
+    { path: "/ProyectosFinalizados", label: "Proyectos Finalizados" },
   ];
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    navigate('/');  // Redirige a la ruta raíz donde está el Login
+    navigate('/'); 
   };
 
   return (

@@ -45,7 +45,6 @@ const AluTitulos = () => {
       if (response.data.status === 'success') {
         const proyecto = response.data.proyecto;
         
-        // Obtener los detalles del estudiante y profesores
         const estudiante = estudiantes.find(e => e.id === id);
         
         Swal.fire({
@@ -93,7 +92,7 @@ const AluTitulos = () => {
   };
 
   const handleDelete = async (id) => {
-    // Mostrar alerta de confirmación con Swal
+  
     const result = await Swal.fire({
       title: '¿Estás seguro?',
       text: "¡No podrás revertir esta acción!",
@@ -156,6 +155,74 @@ const AluTitulos = () => {
     );
   }
 
+  const handleFinalize = async (id) => {
+    try {
+      const { value: nota } = await Swal.fire({
+        title: 'Finalizar Proyecto',
+        input: 'number',
+        inputLabel: 'Ingrese la nota final (1.0 - 7.0)',
+        inputPlaceholder: 'Nota',
+        showCancelButton: true,
+        confirmButtonText: 'Finalizar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#3085d6',
+        inputAttributes: {
+          min: '1.0',
+          max: '7.0',
+          step: '0.1'
+        },
+        inputValidator: (value) => {
+          if (!value) {
+            return 'Debe ingresar una nota';
+          }
+          const nota = parseFloat(value);
+          if (nota < 1.0 || nota > 7.0) {
+            return 'La nota debe estar entre 1.0 y 7.0';
+          }
+        }
+      });
+  
+      if (nota) {
+        const response = await axios.put(`${API_URL}/proyectos/${id}/finalizar`, {
+          nota: parseFloat(nota)
+        });
+  
+        if (response.data.status === 'success') {
+          await Swal.fire({
+            icon: 'success',
+            title: 'Proyecto Finalizado',
+            text: 'El proyecto ha sido finalizado exitosamente.',
+            confirmButtonColor: '#3085d6'
+          });
+          
+          fetchProyectos();
+          
+          const result = await Swal.fire({
+            title: 'Proyecto finalizado con éxito',
+            text: '¿Desea ir a la página de proyectos finalizados?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sí, ir',
+            cancelButtonText: 'No, quedarme aquí'
+          });
+  
+          if (result.isConfirmed) {
+            window.location.href = '/proyectosfinalizados';
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error al finalizar:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo finalizar el proyecto',
+        confirmButtonColor: '#3085d6'
+      });
+    }
+  };
   return (
     <div>
       <Navbar />
@@ -252,6 +319,15 @@ const AluTitulos = () => {
                             </svg>
                             Eliminar
                           </button>
+                          <button 
+                          className="inline-flex items-center px-3 py-1.5 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors duration-200"
+                          onClick={() => handleFinalize(estudiante.id)}
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Finalizar
+                        </button>
                         </div>
                       </td>
                     </tr>

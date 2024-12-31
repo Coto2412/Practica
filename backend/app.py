@@ -88,6 +88,8 @@ class Proyecto(db.Model):
     estudiante_id = db.Column(db.Integer, db.ForeignKey('estudiantes.id'), nullable=False)
     profesor_guia_id = db.Column(db.Integer, db.ForeignKey('profesores.id'), nullable=False)
     profesor_informante_id = db.Column(db.Integer, db.ForeignKey('profesores.id'), nullable=False)
+    nota = db.Column(db.Float, nullable=True)  
+    estado = db.Column(db.String(20), nullable=True) 
     
     # Relaciones
     estudiante = db.relationship('Estudiante', foreign_keys=[estudiante_id])
@@ -114,7 +116,7 @@ def registrar_secretaria():
                 'status': 'error'
             }), 400
         
-        # Crear nueva secretaria
+        # Crea nueva secretaria
         nueva_secretaria = Secretaria(
             nombre=data['nombre'],
             apellido=data['apellido'],
@@ -146,17 +148,17 @@ def login_secretaria():
     try:
         data = request.get_json()
         
-        # Verificar que se proporcionaron email y contraseña
+        # Verifica que se proporcionaron email y contraseña
         if not data or 'email' not in data or 'contrasena' not in data:
             return jsonify({
                 'error': 'Email y contraseña son requeridos',
                 'status': 'error'
             }), 400
         
-        # Buscar la secretaria por email
+        # Busca la secretaria por email
         secretaria = Secretaria.query.filter_by(email=data['email']).first()
         
-        # Verificar si existe la secretaria y si la contraseña es correcta
+        # Verifica si existe la secretaria y si la contraseña es correcta
         if not secretaria or not check_password_hash(secretaria.contrasena, data['contrasena']):
             return jsonify({
                 'error': 'Credenciales inválidas',
@@ -183,12 +185,12 @@ def login_secretaria():
 @app.route('/api/proyectos', methods=['GET'])
 def obtener_proyectos():
     try:
-        proyectos = Proyecto.query.all()
+        proyectos = Proyecto.query.filter(Proyecto.nota.is_(None)).all()
         
         resultado = []
         for proyecto in proyectos:
             proyecto_info = {
-                'id': proyecto.id,  # Se añade el ID real del proyecto
+                'id': proyecto.id,
                 'estudiante': f"{proyecto.estudiante.nombre} {proyecto.estudiante.apellido}",
                 'correo': proyecto.estudiante.email,
                 'proyecto_titulo': proyecto.titulo,
@@ -301,6 +303,65 @@ def eliminar_proyecto(id):
 
         return jsonify({
             'error': f'Error al eliminar el proyecto: {error_message}',
+            'status': 'error'
+        }), 500
+        
+@app.route('/api/proyectos/<int:id>/finalizar', methods=['PUT'])
+def finalizar_proyecto(id):
+    try:
+        proyecto = Proyecto.query.get_or_404(id)
+        data = request.get_json()
+        
+        if 'nota' not in data:
+            return jsonify({
+                'error': 'La nota es requerida',
+                'status': 'error'
+            }), 400
+            
+        proyecto.nota = float(data['nota'])
+        proyecto.estado = 'Aprobado' if proyecto.nota >= 4.0 else 'Reprobado'
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Proyecto finalizado exitosamente',
+            'status': 'success'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+        
+@app.route('/api/proyectos/finalizados', methods=['GET'])
+def obtener_proyectos_finalizados():
+    try:
+        proyectos = Proyecto.query.filter(Proyecto.nota.isnot(None)).all()
+        
+        resultado = []
+        for proyecto in proyectos:
+            proyecto_info = {
+                'id': proyecto.id,
+                'estudiante': f"{proyecto.estudiante.nombre} {proyecto.estudiante.apellido}",
+                'correo': proyecto.estudiante.email,
+                'proyecto_titulo': proyecto.titulo,
+                'profesor_guia': f"{proyecto.profesor_guia.nombre} {proyecto.profesor_guia.apellido}",
+                'profesor_informante': f"{proyecto.profesor_informante.nombre} {proyecto.profesor_informante.apellido}",
+                'nota': proyecto.nota,
+                'estado': proyecto.estado
+            }
+            resultado.append(proyecto_info)
+            
+        return jsonify({
+            'data': resultado,
+            'status': 'success'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
             'status': 'error'
         }), 500
         
