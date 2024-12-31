@@ -372,9 +372,13 @@ def obtener_profesores():
         
         resultado = []
         for profesor in profesores:
+            proyectos_guiados = Proyecto.query.filter_by(profesor_guia_id=profesor.id)\
+                                            .filter(Proyecto.nota.is_(None))\
+                                            .count()
             
-            proyectos_guiados = Proyecto.query.filter_by(profesor_guia_id=profesor.id).count()
-            proyectos_informados = Proyecto.query.filter_by(profesor_informante_id=profesor.id).count()
+            proyectos_informados = Proyecto.query.filter_by(profesor_informante_id=profesor.id)\
+                                               .filter(Proyecto.nota.is_(None))\
+                                               .count()
             
             profesor_info = {
                 'id': profesor.id,
@@ -529,9 +533,13 @@ def obtener_profesor_detalle(id):
     try:
         profesor = Profesor.query.get_or_404(id)
         
-        proyectos_guiados = Proyecto.query.filter_by(profesor_guia_id=profesor.id).all()
+        proyectos_guiados = Proyecto.query.filter_by(profesor_guia_id=profesor.id)\
+                                        .filter(Proyecto.nota.is_(None))\
+                                        .all()
         
-        proyectos_informados = Proyecto.query.filter_by(profesor_informante_id=profesor.id).all()
+        proyectos_informados = Proyecto.query.filter_by(profesor_informante_id=profesor.id)\
+                                           .filter(Proyecto.nota.is_(None))\
+                                           .all()
         
         proyectos_guiados_data = [{
             'id': p.id,
