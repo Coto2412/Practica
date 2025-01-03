@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from './navbar';
-import axios from 'axios';
 import Swal from 'sweetalert2';
+import axiosInstance from '../config/axiosConfig';
 
 const EditarProyecto = () => {
   const { id } = useParams();
@@ -24,9 +24,9 @@ const EditarProyecto = () => {
     const fetchData = async () => {
       try {
         const [proyectoRes, estudiantesRes, profesoresRes] = await Promise.all([
-          axios.get(`http://localhost:5000/api/proyectos/${id}`),
-          axios.get('http://localhost:5000/api/estudiantes'),
-          axios.get('http://localhost:5000/api/profesores')
+          axiosInstance.get(`http://localhost:5000/api/proyectos/${id}`),
+          axiosInstance.get('http://localhost:5000/api/estudiantes'),
+          axiosInstance.get('http://localhost:5000/api/profesores')
         ]);
 
         if (proyectoRes.data.status === 'success') {
@@ -66,7 +66,7 @@ const EditarProyecto = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.put(`http://localhost:5000/api/proyectos/${id}`, formData);
+      const response = await axiosInstance.put(`http://localhost:5000/api/proyectos/${id}`, formData);
       if (response.data.status === 'success') {
         await Swal.fire({
           title: '¡Éxito!',

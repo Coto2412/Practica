@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from './navbar';
-import axios from 'axios';
 import Swal from 'sweetalert2'; // Importa SweetAlert2
+import axiosInstance from '../config/axiosConfig';
 
 const NuevoProyecto = () => {
   const navigate = useNavigate();
@@ -23,8 +23,8 @@ const NuevoProyecto = () => {
     const fetchData = async () => {
       try {
         const [estudiantesRes, profesoresRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/estudiantes'),
-          axios.get('http://localhost:5000/api/profesores')
+          axiosInstance.get('http://localhost:5000/api/estudiantes'),
+          axiosInstance.get('http://localhost:5000/api/profesores')
         ]);
 
         if (estudiantesRes.data.status === 'success') {
@@ -54,7 +54,7 @@ const NuevoProyecto = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5000/api/proyectos', formData);
+      const response = await axiosInstance.post('http://localhost:5000/api/proyectos', formData);
       if (response.data.status === 'success') {
         Swal.fire({
           title: '¡Éxito!',

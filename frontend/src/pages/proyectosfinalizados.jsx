@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from "./navbar";
-import axios from 'axios';
 import Swal from 'sweetalert2';
+import axiosInstance from '../config/axiosConfig';
 
 const ProyectosFinalizados = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,7 +18,7 @@ const ProyectosFinalizados = () => {
   const fetchProyectosFinalizados = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/proyectos/finalizados`);
+      const response = await axiosInstance.get(`${API_URL}/proyectos/finalizados`);
       if (response.data.status === 'success') {
         setProyectos(response.data.data);
       }
@@ -70,7 +70,7 @@ const ProyectosFinalizados = () => {
             return false;
           }
           try {
-            const response = await axios.put(`${API_URL}/proyectos/${proyecto.id}/finalizar`, {
+            const response = await axiosInstance.put(`${API_URL}/proyectos/${proyecto.id}/finalizar`, {
               nota: nota
             });
             if (response.data.status === 'success') {

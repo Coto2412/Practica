@@ -3,8 +3,8 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
-from dotenv import load_dotenv
 from os import environ
+from dotenv import load_dotenv
 
 load_dotenv()
 app = Flask(__name__)
@@ -95,6 +95,60 @@ class Proyecto(db.Model):
     estudiante = db.relationship('Estudiante', foreign_keys=[estudiante_id])
     profesor_guia = db.relationship('Profesor', foreign_keys=[profesor_guia_id])
     profesor_informante = db.relationship('Profesor', foreign_keys=[profesor_informante_id])
+    
+class ParticipacionProfesores(db.Model):
+    __tablename__ = 'participacion_profesores'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    profesor_id = db.Column(db.Integer, db.ForeignKey('profesores.id'), nullable=False)
+    proyecto_id = db.Column(db.Integer, db.ForeignKey('proyectos.id'), nullable=False)
+    rol = db.Column(db.String(100), nullable=False)
+    fecha_participacion = db.Column(db.Date, nullable=False)
+    
+    # Relaciones
+    profesor = db.relationship('Profesor', foreign_keys=[profesor_id])
+    proyecto = db.relationship('Proyecto', foreign_keys=[proyecto_id])
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'profesor_id': self.profesor_id,
+            'proyecto_id': self.proyecto_id,
+            'rol': self.rol,
+            'fecha_participacion': self.fecha_participacion.isoformat()
+        }
+
+class Practica(db.Model):
+    __tablename__ = 'practicas'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    estudiante_id = db.Column(db.Integer, db.ForeignKey('estudiantes.id'), nullable=False)
+    tipo_practica = db.Column(db.String(100), nullable=False)
+    empresa = db.Column(db.String(200), nullable=False)
+    fecha_inicio = db.Column(db.Date, nullable=False)
+    fecha_termino = db.Column(db.Date, nullable=False)
+    supervisor = db.Column(db.String(200), nullable=False)
+    contacto_supervisor = db.Column(db.String(200), nullable=False)
+    nota = db.Column(db.Float, nullable=True)
+    carta_documentacion = db.Column(db.LargeBinary, nullable=True)
+    
+    # Relación
+    estudiante = db.relationship('Estudiante', foreign_keys=[estudiante_id])
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'estudiante_id': self.estudiante_id,
+            'tipo_practica': self.tipo_practica,
+            'empresa': self.empresa,
+            'fecha_inicio': self.fecha_inicio.isoformat(),
+            'fecha_termino': self.fecha_termino.isoformat(),
+            'supervisor': self.supervisor,
+            'contacto_supervisor': self.contacto_supervisor,
+            'nota': self.nota
+        }
+
+
 
 @app.route('/api/registro/secretaria', methods=['POST'])
 def registrar_secretaria():
@@ -232,6 +286,7 @@ def obtener_proyecto(id):
         }), 500
         
 @app.route('/api/proyectos', methods=['POST'])
+@jwt_required()
 def crear_proyecto():
     try:
         data = request.get_json()
@@ -260,6 +315,7 @@ def crear_proyecto():
         }), 500
         
 @app.route('/api/proyectos/<int:id>', methods=['PUT'])
+@jwt_required()
 def actualizar_proyecto(id):
     try:
         proyecto = Proyecto.query.get_or_404(id)
@@ -285,6 +341,7 @@ def actualizar_proyecto(id):
         }), 500
         
 @app.route('/api/proyectos/<int:id>', methods=['DELETE'])
+@jwt_required()
 def eliminar_proyecto(id):
     try:
         proyecto = Proyecto.query.get_or_404(id)
@@ -307,6 +364,7 @@ def eliminar_proyecto(id):
         }), 500
         
 @app.route('/api/proyectos/<int:id>/finalizar', methods=['PUT'])
+@jwt_required()
 def finalizar_proyecto(id):
     try:
         proyecto = Proyecto.query.get_or_404(id)
@@ -366,6 +424,7 @@ def obtener_proyectos_finalizados():
         }), 500
         
 @app.route('/api/profesores', methods=['GET'])
+@jwt_required()
 def obtener_profesores():
     try:
         profesores = Profesor.query.all()
@@ -402,6 +461,7 @@ def obtener_profesores():
         }), 500
 
 @app.route('/api/profesores', methods=['POST'])
+@jwt_required()
 def crear_profesor():
     try:
         data = request.get_json()
@@ -446,6 +506,7 @@ def crear_profesor():
         }), 500
         
 @app.route('/api/profesores/<int:id>', methods=['DELETE'])
+@jwt_required()
 def eliminar_profesor(id):
     try:
         profesor = Profesor.query.get_or_404(id)
@@ -489,6 +550,7 @@ def obtener_profesor(id):
         }), 500
 
 @app.route('/api/profesores/<int:id>', methods=['PUT'])
+@jwt_required()
 def actualizar_profesor(id):
     try:
         profesor = Profesor.query.get_or_404(id)
@@ -578,6 +640,65 @@ def obtener_profesor_detalle(id):
             'error': str(e),
             'status': 'error'
         }), 500
+
+@app.route('/api/practicas/inicial', methods=['GET'])
+def obtener_practicas_iniciales():
+    try:
+        practicas = Practica.query.filter(Practica.tipo_practica.ilike('inicial')).all()
+        
+        resultado = []
+        for practica in practicas:
+            practica_info = {
+                'id': practica.id,
+                'estudiante': f"{practica.estudiante.nombre} {practica.estudiante.apellido}",
+                'estudiante_email': practica.estudiante.email,
+                'empresa': practica.empresa,
+                'fecha_inicio': practica.fecha_inicio.strftime('%Y-%m-%d'),
+                'fecha_termino': practica.fecha_termino.strftime('%Y-%m-%d'),
+                'supervisor': practica.supervisor,
+                'contacto_supervisor': practica.contacto_supervisor,
+                'nota': practica.nota if practica.nota else None
+            }
+            resultado.append(practica_info)
+            
+        return jsonify({
+            'data': resultado,
+            'status': 'success'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+        
+@app.route('/api/practicas/<int:id>', methods=['PUT'])
+@jwt_required()
+def actualizar_practica(id):
+    try:
+        practica = Practica.query.get_or_404(id)
+        data = request.get_json()
+        practica.tipo_practica = data.get('tipo_practica', practica.tipo_practica)
+        practica.empresa = data.get('empresa', practica.empresa)
+        practica.supervisor = data.get('supervisor', practica.supervisor)
+        practica.contacto_supervisor = data.get('contacto_supervisor', practica.contacto_supervisor)
+        db.session.commit()
+        return jsonify({'message': 'Práctica actualizada exitosamente', 'status': 'success'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e), 'status': 'error'}), 500
+
+@app.route('/api/practicas/<int:id>', methods=['DELETE'])
+@jwt_required()
+def eliminar_practica(id):
+    try:
+        practica = Practica.query.get_or_404(id)
+        db.session.delete(practica)
+        db.session.commit()
+        return jsonify({'message': 'Práctica eliminada exitosamente', 'status': 'success'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e), 'status': 'error'}), 500
         
 @app.route('/api/estudiantes', methods=['GET'])
 def obtener_estudiantes():
@@ -592,7 +713,7 @@ def obtener_estudiantes():
             'error': str(e),
             'status': 'error'
         }), 500
-        
+    
 @app.route('/api/logout', methods=['POST'])
 @jwt_required()
 def logout():
@@ -600,10 +721,11 @@ def logout():
         'message': 'Sesión cerrada exitosamente',
         'status': 'success'
     }), 200
-        
+    
+
 with app.app_context():
     db.create_all()
-
+    
 if __name__ == '__main__':
     app.run(debug=True)
     

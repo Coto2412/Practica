@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import Navbar from "./navbar";
 import axios from 'axios'; 
 import Swal from 'sweetalert2';
+import axiosInstance from '../config/axiosConfig';
+import { useNavigate } from 'react-router-dom';
 
 const AluTitulos = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [estudiantes, setEstudiantes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const API_URL = 'http://localhost:5000/api';
 
@@ -106,7 +109,7 @@ const AluTitulos = () => {
   
     if (result.isConfirmed) {
       try {
-        const response = await axios.delete(`${API_URL}/proyectos/${id}`);
+        const response = await axiosInstance.delete(`/proyectos/${id}`);
         if (response.data.status === 'success') {
           await Swal.fire({
             icon: 'success',
@@ -183,7 +186,7 @@ const AluTitulos = () => {
       });
   
       if (nota) {
-        const response = await axios.put(`${API_URL}/proyectos/${id}/finalizar`, {
+        const response = await axiosInstance.put(`/proyectos/${id}/finalizar`, {
           nota: parseFloat(nota)
         });
   
@@ -303,7 +306,7 @@ const AluTitulos = () => {
                         </button>
                           <button 
                             className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors duration-200"
-                            onClick={() => window.location.href = `/EditarProyecto/${estudiante.id}`}
+                            onClick={() => navigate(`/EditarProyecto/${estudiante.id}`)}
                           >
                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -338,7 +341,7 @@ const AluTitulos = () => {
             <div className="mt-6 flex justify-end">
               <button 
                 className="inline-flex items-center px-4 py-2 bg-green-200 text-green-700 rounded-md hover:bg-green-200 transition-colors duration-200"
-                onClick={() => window.location.href = '/NuevoProyecto'}
+                onClick={() => navigate('/NuevoProyecto')}
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>

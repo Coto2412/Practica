@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from "./navbar";
-import axios from 'axios';
 import Swal from 'sweetalert2';
+import axiosInstance from '../config/axiosConfig';
 
 const AdminProfesores = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -18,7 +18,7 @@ const AdminProfesores = () => {
     const fetchProfesores = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_URL}/profesores`);
+        const response = await axiosInstance.get(`${API_URL}/profesores`);
         if (response.data.status === 'success') {
           setProfesores(response.data.data);
         }
@@ -63,7 +63,7 @@ const AdminProfesores = () => {
   
       if (formValues) {
         try {
-          const response = await axios.post(`${API_URL}/profesores`, formValues);
+          const response = await axiosInstance.post(`${API_URL}/profesores`, formValues);
           
           if (response.data.status === 'success') {
             await Swal.fire({
@@ -117,7 +117,7 @@ const AdminProfesores = () => {
 
         if (formValues) {
             try {
-                const response = await axios.put(`${API_URL}/profesores/${profesor.id}`, formValues);
+                const response = await axiosInstance.put(`${API_URL}/profesores/${profesor.id}`, formValues);
 
                 if (response.data.status === 'success') {
                     await Swal.fire({
@@ -140,7 +140,7 @@ const AdminProfesores = () => {
 
     const handleViewProfesor = async (id) => {
         try {
-            const response = await axios.get(`${API_URL}/profesores/${id}/detalle`);
+            const response = await axiosInstance.get(`${API_URL}/profesores/${id}/detalle`);
             if (response.data.status === 'success') {
                 const profesor = response.data.profesor;
                 
@@ -230,7 +230,7 @@ const AdminProfesores = () => {
     
         if (result.isConfirmed) {
             try {
-                const response = await axios.delete(`${API_URL}/profesores/${id}`);
+                const response = await axiosInstance.delete(`${API_URL}/profesores/${id}`);
                 if (response.data.status === 'success') {
                     await Swal.fire({
                         icon: 'success',

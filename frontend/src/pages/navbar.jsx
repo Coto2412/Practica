@@ -9,6 +9,8 @@ const Navbar = () => {
     { path: "/ProyectosTitulo", label: "Proyectos de Título" },
     { path: "/AdminProfesores", label: "Administrar Profesores" },
     { path: "/ProyectosFinalizados", label: "Proyectos Finalizados" },
+    { path: "/PracticaInicial", label: "Prácticas Iniciales" },
+    { path: "/PracticaProfesional", label: "Prácticas Profesionales" },
   ];
 
   const handleLogout = () => {
