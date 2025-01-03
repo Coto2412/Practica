@@ -4,7 +4,7 @@ import Navbar from './navbar';
 import Swal from 'sweetalert2';
 import axiosInstance from '../config/axiosConfig';
 
-const EditPractica = () => {
+const EditPracticaProfesional = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -23,7 +23,7 @@ const EditPractica = () => {
   useEffect(() => {
     const fetchPractica = async () => {
       try {
-        const response = await axiosInstance.get(`http://localhost:5000/api/practicas/inicial`);
+        const response = await axiosInstance.get(`http://localhost:5000/api/practicas/profesional`);
         if (response.data.status === 'success') {
           const practica = response.data.data.find(p => p.id === parseInt(id));
           if (practica) {
@@ -60,23 +60,23 @@ const EditPractica = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-        const response = await axiosInstance.put(`http://localhost:5000/api/practicas/${id}`, {
+        const response = await axiosInstance.put(`http://localhost:5000/api/practicas/profesional/${id}`, {
             empresa: formData.empresa,
             fecha_inicio: formData.fecha_inicio,
             fecha_termino: formData.fecha_termino,
             supervisor: formData.supervisor,
             contacto_supervisor: formData.contacto_supervisor,
-            nota: formData.nota
+            nota: formData.nota ? parseFloat(formData.nota) : null
         });
 
         if (response.data.status === 'success') {
             await Swal.fire({
                 title: '¡Éxito!',
-                text: 'Práctica actualizada exitosamente',
+                text: 'Práctica profesional actualizada exitosamente',
                 icon: 'success',
                 confirmButtonText: 'Aceptar'
             });
-            navigate('/PracticaInicial');
+            navigate('/PracticaProfesional');
         }
     } catch (err) {
         const errorMessage = err.response?.data?.error || 'Error al actualizar la práctica';
@@ -89,41 +89,19 @@ const EditPractica = () => {
     }
 };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl font-semibold text-gray-600">Cargando...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl font-semibold text-red-600">{error}</div>
-      </div>
-    );
-  }
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="text-xl font-semibold text-gray-600">Cargando...</div></div>;
+  if (error) return <div className="min-h-screen flex items-center justify-center"><div className="text-xl font-semibold text-red-600">{error}</div></div>;
 
   return (
     <div>
       <Navbar />
-      <div
-        className="min-h-screen bg-gray-100 py-10"
-        style={{
-          backgroundImage: 'url("/img/uct.png")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        }}
-      >
+      <div className="min-h-screen bg-gray-100 py-10" style={{backgroundImage: 'url("/img/uct.png")', backgroundSize: 'cover', backgroundPosition: 'center'}}>
         <div className="max-w-3xl mx-auto px-4 py-16">
           <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Editar Práctica Inicial</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Editar Práctica Profesional</h2>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Estudiante
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Estudiante</label>
                 <input
                   type="text"
                   name="estudiante"
@@ -134,9 +112,7 @@ const EditPractica = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email del Estudiante
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email del Estudiante</label>
                 <input
                   type="email"
                   name="estudiante_email"
@@ -147,9 +123,7 @@ const EditPractica = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Empresa
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Empresa</label>
                 <input
                   type="text"
                   name="empresa"
@@ -162,9 +136,7 @@ const EditPractica = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Fecha Inicio
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha Inicio</label>
                   <input
                     type="date"
                     name="fecha_inicio"
@@ -175,9 +147,7 @@ const EditPractica = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Fecha Término
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha Término</label>
                   <input
                     type="date"
                     name="fecha_termino"
@@ -189,9 +159,7 @@ const EditPractica = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Supervisor
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Supervisor</label>
                 <input
                   type="text"
                   name="supervisor"
@@ -203,9 +171,7 @@ const EditPractica = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contacto del Supervisor
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Contacto del Supervisor</label>
                 <input
                   type="text"
                   name="contacto_supervisor"
@@ -217,9 +183,7 @@ const EditPractica = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nota
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nota</label>
                 <input
                   type="number"
                   name="nota"
@@ -232,7 +196,7 @@ const EditPractica = () => {
               <div className="flex justify-end space-x-4">
                 <button
                   type="button"
-                  onClick={() => navigate('/PracticaInicial')}
+                  onClick={() => navigate('/PracticaProfesional')}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   Cancelar
@@ -252,4 +216,4 @@ const EditPractica = () => {
   );
 };
 
-export default EditPractica;
+export default EditPracticaProfesional;

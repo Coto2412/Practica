@@ -131,7 +131,63 @@ const PracticaInicial = () => {
                       <td className="px-6 py-4 text-sm">{practica.fecha_termino}</td>
                       <td className="px-6 py-4 text-sm">{practica.supervisor}</td>
                       <td className="px-6 py-4 text-sm">{practica.contacto_supervisor}</td>
-                      <td className="px-6 py-4 text-sm">{practica.nota}</td>
+                      <td className="px-6 py-4 text-sm">
+                        {practica.nota ? (
+                          <div className="flex items-center space-x-2">
+                            <span>{practica.nota}</span>
+                            <button
+                              onClick={async () => {
+                                const result = await Swal.fire({
+                                  title: '¿Eliminar nota?',
+                                  text: '¿Estás seguro de que deseas eliminar la nota?',
+                                  icon: 'warning',
+                                  showCancelButton: true,
+                                  confirmButtonColor: '#d33',
+                                  cancelButtonColor: '#3085d6',
+                                  confirmButtonText: 'Sí, eliminar',
+                                  cancelButtonText: 'Cancelar',
+                                });
+
+                                if (result.isConfirmed) {
+                                  try {
+                                    const response = await axiosInstance.put(`${API_URL}/practicas/${practica.id}`, {
+                                      ...practica,
+                                      nota: null
+                                    });
+                                    
+                                    if (response.data.status === 'success') {
+                                      Swal.fire('Éxito', 'Nota eliminada correctamente', 'success');
+                                      fetchPracticas();
+                                    }
+                                  } catch (error) {
+                                    console.error(error);
+                                    Swal.fire('Error', 'No se pudo eliminar la nota', 'error');
+                                  }
+                                }
+                              }}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <svg 
+                                className="w-4 h-4" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24" 
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path 
+                                  strokeLinecap="round" 
+                                  strokeLinejoin="round" 
+                                  strokeWidth={2} 
+                                  d="M6 18L18 6M6 6l12 12" 
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">Sin nota</span>
+                        )}
+                      </td>
+
                       <td className="px-6 py-4 text-sm">
                         <div className="flex justify-center space-x-2">
                           <button className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors duration-200"

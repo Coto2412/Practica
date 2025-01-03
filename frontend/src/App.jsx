@@ -9,6 +9,7 @@ import ProyectosFinalizados from './pages/proyectosfinalizados';
 import PracticaInicial from './pages/practicainicial';
 import PracticaProfesional from './pages/practicaprofesional'; 
 import EditarPractica from './pages/editpractica';
+import EditarPracticaProfesional from './pages/editpracticaprofesional';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/PracticaInicial" element={<PracticaInicial />} />
         <Route path="/PracticaProfesional" element={<PracticaProfesional />} />
         <Route path="/EditarPractica/:id" element={<EditarPractica />} />
+        <Route path="/EditarPracticaProfesional/:id" element={<EditarPracticaProfesional />} />
       </Routes>
     </Router>
   );

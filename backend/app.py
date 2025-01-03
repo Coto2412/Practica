@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from os import environ
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 app = Flask(__name__)
@@ -678,10 +679,26 @@ def actualizar_practica(id):
     try:
         practica = Practica.query.get_or_404(id)
         data = request.get_json()
-        practica.tipo_practica = data.get('tipo_practica', practica.tipo_practica)
+        
+        # Si la nota viene como None o vacía, la establecemos como None
+        if 'nota' in data:
+            if data['nota'] is None or data['nota'] == '':
+                practica.nota = None
+            else:
+                nota = float(data['nota'])
+                if nota < 1.0 or nota > 7.0:
+                    return jsonify({
+                        'error': 'La nota debe estar entre 1.0 y 7.0',
+                        'status': 'error'
+                    }), 400
+                practica.nota = nota
+
         practica.empresa = data.get('empresa', practica.empresa)
+        practica.fecha_inicio = data.get('fecha_inicio', practica.fecha_inicio)
+        practica.fecha_termino = data.get('fecha_termino', practica.fecha_termino)
         practica.supervisor = data.get('supervisor', practica.supervisor)
         practica.contacto_supervisor = data.get('contacto_supervisor', practica.contacto_supervisor)
+        
         db.session.commit()
         return jsonify({'message': 'Práctica actualizada exitosamente', 'status': 'success'}), 200
     except Exception as e:
@@ -699,6 +716,113 @@ def eliminar_practica(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e), 'status': 'error'}), 500
+    
+@app.route('/api/practicas/profesional', methods=['GET'])
+def obtener_practicas_profesionales():
+    try:
+        practicas = Practica.query.filter(Practica.tipo_practica.ilike('profesional')).all()
+        
+        resultado = []
+        for practica in practicas:
+            practica_info = {
+                'id': practica.id,
+                'estudiante': f"{practica.estudiante.nombre} {practica.estudiante.apellido}",
+                'estudiante_email': practica.estudiante.email,
+                'empresa': practica.empresa,
+                'fecha_inicio': practica.fecha_inicio.strftime('%Y-%m-%d'),
+                'fecha_termino': practica.fecha_termino.strftime('%Y-%m-%d'),
+                'supervisor': practica.supervisor,
+                'contacto_supervisor': practica.contacto_supervisor,
+                'nota': practica.nota if practica.nota else None
+            }
+            resultado.append(practica_info)
+            
+        return jsonify({
+            'data': resultado,
+            'status': 'success'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+        
+@app.route('/api/practicas/profesional/<int:id>', methods=['PUT'])
+@jwt_required()
+def actualizar_practica_profesional(id):
+    try:
+        practica = Practica.query.get_or_404(id)
+        data = request.get_json()
+        
+        # Si la nota viene como None, vacía o se quiere eliminar, la establecemos como None
+        if 'nota' in data:
+            if data['nota'] is None or data['nota'] == '':
+                practica.nota = None
+            else:
+                nota = float(data['nota'])
+                if nota < 1.0 or nota > 7.0:
+                    return jsonify({
+                        'error': 'La nota debe estar entre 1.0 y 7.0',
+                        'status': 'error'
+                    }), 400
+                practica.nota = nota
+
+        # Actualizar fechas si se proporcionan
+        if 'fecha_inicio' in data and data['fecha_inicio']:
+            try:
+                practica.fecha_inicio = datetime.strptime(data['fecha_inicio'], '%Y-%m-%d')
+            except ValueError:
+                return jsonify({
+                    'error': 'Formato de fecha inválido para fecha_inicio',
+                    'status': 'error'
+                }), 400
+                
+        if 'fecha_termino' in data and data['fecha_termino']:
+            try:
+                practica.fecha_termino = datetime.strptime(data['fecha_termino'], '%Y-%m-%d')
+            except ValueError:
+                return jsonify({
+                    'error': 'Formato de fecha inválido para fecha_termino',
+                    'status': 'error'
+                }), 400
+        
+        practica.empresa = data.get('empresa', practica.empresa)
+        practica.supervisor = data.get('supervisor', practica.supervisor)
+        practica.contacto_supervisor = data.get('contacto_supervisor', practica.contacto_supervisor)
+        
+        db.session.commit()
+        return jsonify({
+            'message': 'Práctica profesional actualizada exitosamente',
+            'status': 'success'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+        
+@app.route('/api/practicas/profesional/<int:id>', methods=['DELETE'])
+@jwt_required()
+def eliminar_practica_profesional(id):
+    try:
+        practica = Practica.query.get_or_404(id)
+        db.session.delete(practica)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Práctica profesional eliminada exitosamente',
+            'status': 'success'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
         
 @app.route('/api/estudiantes', methods=['GET'])
 def obtener_estudiantes():
