@@ -10,6 +10,8 @@ import PracticaInicial from './pages/practicainicial';
 import PracticaProfesional from './pages/practicaprofesional'; 
 import EditarPractica from './pages/editpractica';
 import EditarPracticaProfesional from './pages/editpracticaprofesional';
+import NuevaPractica from './pages/nuevapracticainicial';
+import NuevaPracticaProfesional from './pages/nuevapracticaprofesional';
 
 function App() {
   return (
@@ -26,6 +28,8 @@ function App() {
         <Route path="/PracticaProfesional" element={<PracticaProfesional />} />
         <Route path="/EditarPractica/:id" element={<EditarPractica />} />
         <Route path="/EditarPracticaProfesional/:id" element={<EditarPracticaProfesional />} />
+        <Route path="/NuevaPractica" element={<NuevaPractica />} />
+        <Route path="/NuevaPracticaProfesional" element={<NuevaPracticaProfesional />} />
       </Routes>
     </Router>
   );

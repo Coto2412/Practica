@@ -21,15 +21,27 @@ jwt = JWTManager(app)
 CORS(app, resources={
     r"/api/*": {
         "origins": [
-            "http://localhost:5173",  # Frontend en React + vite
-            "http://127.0.0.1:5173",  # Variación de localhost para React
-            "http://localhost:5000",  # Backend local
-            "http://127.0.0.1:5000",  # Variación de localhost para Flask
-            ],
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:5174",  
+            "http://127.0.0.1:5174",  
+            "http://localhost:5000",
+            "http://127.0.0.1:5000"
+        ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
+        "allow_headers": ["Content-Type", "Authorization"],
+        "expose_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True,
+        "max_age": 3600
     }
 })
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 class Secretaria(db.Model):
     __tablename__ = 'secretarias'
@@ -673,6 +685,80 @@ def obtener_practicas_iniciales():
             'status': 'error'
         }), 500
         
+@app.route('/api/practicas/inicial', methods=['POST'])
+@jwt_required()
+def crear_practica_inicial():
+    try:
+        data = request.get_json()
+        
+        # Validar campos requeridos
+        required_fields = ['estudiante_id', 'empresa', 'fecha_inicio', 
+                         'fecha_termino', 'supervisor', 'contacto_supervisor']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'error': f'El campo {field} es requerido',
+                    'status': 'error'
+                }), 400
+        
+        # Convertir fechas de string a objeto datetime
+        try:
+            fecha_inicio = datetime.strptime(data['fecha_inicio'], '%Y-%m-%d')
+            fecha_termino = datetime.strptime(data['fecha_termino'], '%Y-%m-%d')
+        except ValueError:
+            return jsonify({
+                'error': 'Formato de fecha inválido',
+                'status': 'error'
+            }), 400
+            
+        # Validar que el estudiante existe
+        estudiante = Estudiante.query.get(data['estudiante_id'])
+        if not estudiante:
+            return jsonify({
+                'error': 'El estudiante no existe',
+                'status': 'error'
+            }), 404
+            
+        # Verificar si el estudiante ya tiene una práctica inicial
+        practica_existente = Practica.query.filter_by(
+            estudiante_id=data['estudiante_id'],
+            tipo_practica='Inicial'  # Cambiado a mayúscula
+        ).first()
+        
+        if practica_existente:
+            return jsonify({
+                'error': 'El estudiante ya tiene una práctica inicial registrada',
+                'status': 'error'
+            }), 400
+
+        # Crear nueva práctica
+        nueva_practica = Practica(
+            estudiante_id=data['estudiante_id'],
+            tipo_practica='Inicial',  # Cambiado a mayúscula
+            empresa=data['empresa'],
+            fecha_inicio=fecha_inicio,
+            fecha_termino=fecha_termino,
+            supervisor=data['supervisor'],
+            contacto_supervisor=data['contacto_supervisor']
+        )
+        
+        db.session.add(nueva_practica)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Práctica inicial creada exitosamente',
+            'practica': nueva_practica.to_dict(),
+            'status': 'success'
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+        
+        
 @app.route('/api/practicas/<int:id>', methods=['PUT'])
 @jwt_required()
 def actualizar_practica(id):
@@ -796,6 +882,79 @@ def actualizar_practica_profesional(id):
             'message': 'Práctica profesional actualizada exitosamente',
             'status': 'success'
         }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+        
+@app.route('/api/practicas/profesional', methods=['POST'])
+@jwt_required()
+def crear_practica_profesional():
+    try:
+        data = request.get_json()
+        
+        # Validar campos requeridos
+        required_fields = ['estudiante_id', 'empresa', 'fecha_inicio', 
+                         'fecha_termino', 'supervisor', 'contacto_supervisor']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'error': f'El campo {field} es requerido',
+                    'status': 'error'
+                }), 400
+        
+        # Convertir fechas de string a objeto datetime
+        try:
+            fecha_inicio = datetime.strptime(data['fecha_inicio'], '%Y-%m-%d')
+            fecha_termino = datetime.strptime(data['fecha_termino'], '%Y-%m-%d')
+        except ValueError:
+            return jsonify({
+                'error': 'Formato de fecha inválido',
+                'status': 'error'
+            }), 400
+            
+        # Validar que el estudiante existe
+        estudiante = Estudiante.query.get(data['estudiante_id'])
+        if not estudiante:
+            return jsonify({
+                'error': 'El estudiante no existe',
+                'status': 'error'
+            }), 404
+            
+        # Verificar si el estudiante ya tiene una práctica profesional
+        practica_existente = Practica.query.filter_by(
+            estudiante_id=data['estudiante_id'],
+            tipo_practica='Profesional'
+        ).first()
+        
+        if practica_existente:
+            return jsonify({
+                'error': 'El estudiante ya tiene una práctica profesional registrada',
+                'status': 'error'
+            }), 400
+
+        # Crear nueva práctica
+        nueva_practica = Practica(
+            estudiante_id=data['estudiante_id'],
+            tipo_practica='Profesional',
+            empresa=data['empresa'],
+            fecha_inicio=fecha_inicio,
+            fecha_termino=fecha_termino,
+            supervisor=data['supervisor'],
+            contacto_supervisor=data['contacto_supervisor']
+        )
+        
+        db.session.add(nueva_practica)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Práctica profesional creada exitosamente',
+            'practica': nueva_practica.to_dict(),
+            'status': 'success'
+        }), 201
         
     except Exception as e:
         db.session.rollback()

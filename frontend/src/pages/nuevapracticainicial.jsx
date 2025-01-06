@@ -1,47 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/navbar';
-import Swal from 'sweetalert2'; // Importa SweetAlert2
+import Swal from 'sweetalert2';
 import axiosInstance from '../config/axiosConfig';
 
-const NuevoProyecto = () => {
+const NuevaPracticaInicial = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    titulo: '',
-    descripcion: '',
-    estudiante_id: '',
-    profesor_guia_id: '',
-    profesor_informante_id: ''
-  });
-
   const [estudiantes, setEstudiantes] = useState([]);
-  const [profesores, setProfesores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [formData, setFormData] = useState({
+    estudiante_id: '',
+    tipo_practica: 'Inicial',
+    empresa: '',
+    fecha_inicio: '',
+    fecha_termino: '',
+    supervisor: '',
+    contacto_supervisor: '',
+  });
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchEstudiantes = async () => {
       try {
-        const [estudiantesRes, profesoresRes] = await Promise.all([
-          axiosInstance.get('http://localhost:5000/api/estudiantes'),
-          axiosInstance.get('http://localhost:5000/api/profesores')
-        ]);
-
-        if (estudiantesRes.data.status === 'success') {
-          setEstudiantes(estudiantesRes.data.data);
-        }
-        if (profesoresRes.data.status === 'success') {
-          setProfesores(profesoresRes.data.data);
+        const response = await axiosInstance.get('http://localhost:5000/api/estudiantes');
+        if (response.data.status === 'success') {
+          setEstudiantes(response.data.data);
         }
       } catch (err) {
-        setError('Error al cargar los datos');
+        setError('Error al cargar los estudiantes');
         console.error('Error:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchEstudiantes();
   }, []);
 
   const handleChange = (e) => {
@@ -54,19 +47,19 @@ const NuevoProyecto = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axiosInstance.post('http://localhost:5000/api/proyectos', formData);
+      const response = await axiosInstance.post('http://localhost:5000/api/practicas/inicial', formData);
       if (response.data.status === 'success') {
         Swal.fire({
           title: '¡Éxito!',
-          text: 'Proyecto creado exitosamente',
+          text: 'Práctica inicial creada exitosamente',
           icon: 'success',
           confirmButtonText: 'Aceptar'
         }).then(() => {
-          navigate('/ProyectosTitulo');
+          navigate('/PracticaInicial');
         });
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.error || 'Error al crear el proyecto';
+      const errorMessage = err.response?.data?.error || 'Error al crear la práctica inicial';
       Swal.fire({
         title: 'Error',
         text: errorMessage,
@@ -104,37 +97,9 @@ const NuevoProyecto = () => {
       >
         <div className="max-w-3xl mx-auto px-4 py-16">
           <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl p-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Nuevo Proyecto de Título</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6">Nueva Práctica Inicial</h2>
             
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Título del Proyecto
-                </label>
-                <input
-                  type="text"
-                  name="titulo"
-                  required
-                  value={formData.titulo}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Descripción
-                </label>
-                <textarea
-                  name="descripcion"
-                  required
-                  value={formData.descripcion}
-                  onChange={handleChange}
-                  rows="4"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Estudiante
@@ -157,48 +122,80 @@ const NuevoProyecto = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Profesor Guía
+                  Empresa
                 </label>
-                <select
-                  name="profesor_guia_id"
+                <input
+                  type="text"
+                  name="empresa"
                   required
-                  value={formData.profesor_guia_id}
+                  value={formData.empresa}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Seleccione un profesor guía</option>
-                  {profesores.map((profesor) => (
-                    <option key={profesor.id} value={profesor.id}>
-                      {profesor.nombre} {profesor.apellido}
-                    </option>
-                  ))}
-                </select>
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha de Inicio
+                  </label>
+                  <input
+                    type="date"
+                    name="fecha_inicio"
+                    required
+                    value={formData.fecha_inicio}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha de Término
+                  </label>
+                  <input
+                    type="date"
+                    name="fecha_termino"
+                    required
+                    value={formData.fecha_termino}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Profesor Informante
+                  Supervisor
                 </label>
-                <select
-                  name="profesor_informante_id"
+                <input
+                  type="text"
+                  name="supervisor"
                   required
-                  value={formData.profesor_informante_id}
+                  value={formData.supervisor}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Seleccione un profesor informante</option>
-                  {profesores.map((profesor) => (
-                    <option key={profesor.id} value={profesor.id}>
-                      {profesor.nombre} {profesor.apellido}
-                    </option>
-                  ))}
-                </select>
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Contacto del Supervisor
+                </label>
+                <input
+                  type="text"
+                  name="contacto_supervisor"
+                  required
+                  value={formData.contacto_supervisor}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                />
               </div>
 
               <div className="flex justify-end space-x-4">
                 <button
                   type="button"
-                  onClick={() => navigate('/ProyectosTitulo')}
+                  onClick={() => navigate('/PracticaInicial')}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   Cancelar
@@ -207,7 +204,7 @@ const NuevoProyecto = () => {
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
-                  Guardar Proyecto
+                  Guardar Práctica
                 </button>
               </div>
             </form>
@@ -218,4 +215,4 @@ const NuevoProyecto = () => {
   );
 };
 
-export default NuevoProyecto;
+export default NuevaPracticaInicial;

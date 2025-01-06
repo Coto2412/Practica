@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from "./navbar";
+import Navbar from "../components/navbar";
 import axios from 'axios'; 
 import Swal from 'sweetalert2';
 import axiosInstance from '../config/axiosConfig';
