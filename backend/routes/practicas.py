@@ -23,7 +23,11 @@ def obtener_practicas_iniciales():
                 'fecha_termino': practica.fecha_termino.strftime('%Y-%m-%d'),
                 'supervisor': practica.supervisor,
                 'contacto_supervisor': practica.contacto_supervisor,
-                'nota': practica.nota if practica.nota else None
+                'nota': practica.nota if practica.nota else None,
+                'carta_supervisor': practica.carta_supervisor,
+                'certificado_alumno': practica.certificado_alumno,
+                'formulario_inscripcion': practica.formulario_inscripcion,
+                'autorizacion_empresa': practica.autorizacion_empresa
             }
             resultado.append(practica_info)
             
@@ -95,7 +99,11 @@ def crear_practica_inicial():
         
         return jsonify({
             'message': 'Práctica inicial creada exitosamente',
-            'practica': nueva_practica.to_dict(),
+            'practica': {
+                **nueva_practica.to_dict(),  # Esto incluirá todos los campos
+                'estudiante': f"{estudiante.nombre} {estudiante.apellido}",
+                'estudiante_email': estudiante.email
+            },
             'status': 'success'
         }), 201
         
@@ -128,6 +136,44 @@ def obtener_practicas_profesionales():
             
         return jsonify({
             'data': resultado,
+            'status': 'success'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+        
+@practicas_bp.route('/practicas/profesional/<int:id>', methods=['GET'])
+def obtener_practica_profesional(id):
+    try:
+        practica = Practica.query.filter_by(id=id, tipo_practica='Profesional').first()
+        
+        if not practica:
+            return jsonify({
+                'error': 'Práctica no encontrada',
+                'status': 'error'
+            }), 404
+            
+        practica_info = {
+            'id': practica.id,
+            'estudiante': f"{practica.estudiante.nombre} {practica.estudiante.apellido}",
+            'estudiante_email': practica.estudiante.email,
+            'empresa': practica.empresa,
+            'fecha_inicio': practica.fecha_inicio.strftime('%Y-%m-%d'),
+            'fecha_termino': practica.fecha_termino.strftime('%Y-%m-%d'),
+            'supervisor': practica.supervisor,
+            'contacto_supervisor': practica.contacto_supervisor,
+            'nota': practica.nota if practica.nota else None,
+            'carta_supervisor': practica.carta_supervisor,
+            'certificado_alumno': practica.certificado_alumno,
+            'formulario_inscripcion': practica.formulario_inscripcion,
+            'autorizacion_empresa': practica.autorizacion_empresa
+        }
+            
+        return jsonify({
+            'data': practica_info,
             'status': 'success'
         }), 200
         
@@ -197,6 +243,67 @@ def crear_practica_profesional():
             'practica': nueva_practica.to_dict(),
             'status': 'success'
         }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'error': str(e),
+            'status': 'error'
+        }), 500
+        
+@practicas_bp.route('/practicas/profesional/<int:id>', methods=['PUT'])
+@jwt_required()
+def actualizar_practica_profesional(id):
+    try:
+        practica = Practica.query.filter_by(id=id, tipo_practica='Profesional').first()
+        if not practica:
+            return jsonify({
+                'error': 'Práctica profesional no encontrada',
+                'status': 'error'
+            }), 404
+            
+        data = request.get_json()
+        
+        if 'nota' in data:
+            if data['nota'] is None or data['nota'] == '':
+                practica.nota = None
+            else:
+                nota = float(data['nota'])
+                if nota < 1.0 or nota > 7.0:
+                    return jsonify({
+                        'error': 'La nota debe estar entre 1.0 y 7.0',
+                        'status': 'error'
+                    }), 400
+                practica.nota = nota
+
+        practica.empresa = data.get('empresa', practica.empresa)
+        
+        if 'fecha_inicio' in data and data['fecha_inicio']:
+            try:
+                practica.fecha_inicio = datetime.strptime(data['fecha_inicio'], '%Y-%m-%d')
+            except ValueError:
+                return jsonify({
+                    'error': 'Formato de fecha inválido para fecha_inicio',
+                    'status': 'error'
+                }), 400
+                
+        if 'fecha_termino' in data and data['fecha_termino']:
+            try:
+                practica.fecha_termino = datetime.strptime(data['fecha_termino'], '%Y-%m-%d')
+            except ValueError:
+                return jsonify({
+                    'error': 'Formato de fecha inválido para fecha_termino',
+                    'status': 'error'
+                }), 400
+        
+        practica.supervisor = data.get('supervisor', practica.supervisor)
+        practica.contacto_supervisor = data.get('contacto_supervisor', practica.contacto_supervisor)
+        
+        db.session.commit()
+        return jsonify({
+            'message': 'Práctica profesional actualizada exitosamente',
+            'status': 'success'
+        }), 200
         
     except Exception as e:
         db.session.rollback()

@@ -12,7 +12,10 @@ class Practica(db.Model):
     supervisor = db.Column(db.String(200), nullable=False)
     contacto_supervisor = db.Column(db.String(200), nullable=False)
     nota = db.Column(db.Float, nullable=True)
-    carta_documentacion = db.Column(db.LargeBinary, nullable=True)
+    carta_supervisor = db.Column(db.String(255), nullable=True)
+    certificado_alumno = db.Column(db.String(255), nullable=True)
+    formulario_inscripcion = db.Column(db.String(255), nullable=True)
+    autorizacion_empresa = db.Column(db.String(255), nullable=True)
     
     # Relación
     estudiante = db.relationship('Estudiante', foreign_keys=[estudiante_id])
@@ -27,5 +30,9 @@ class Practica(db.Model):
             'fecha_termino': self.fecha_termino.isoformat(),
             'supervisor': self.supervisor,
             'contacto_supervisor': self.contacto_supervisor,
-            'nota': self.nota
+            'nota': self.nota,
+            'carta_supervisor': self.carta_supervisor,
+            'certificado_alumno': self.certificado_alumno,
+            'formulario_inscripcion': self.formulario_inscripcion,
+            'autorizacion_empresa': self.autorizacion_empresa
         }

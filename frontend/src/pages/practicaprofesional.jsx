@@ -139,6 +139,7 @@ const PracticaProfesional = () => {
                 fetchPracticas={fetchPracticas}
                 axiosInstance={axiosInstance}
                 API_URL={API_URL}
+                tipo="profesional"
               />
             ) : (
               <div className="overflow-x-auto border border-gray-200 rounded-lg">
@@ -215,7 +216,7 @@ const PracticaProfesional = () => {
                           <div className="flex justify-center space-x-2">
                             <button
                               className="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors duration-200"
-                              onClick={() => navigate(`/EditarPractica/${practica.id}`)}
+                              onClick={() => navigate(`/EditarPracticaProfesional/${practica.id}`)}
                             >
                               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -231,6 +232,112 @@ const PracticaProfesional = () => {
                               </svg>
                               Eliminar
                             </button>
+                            <button
+                              className="inline-flex items-center px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors duration-200"
+                              onClick={async () => {
+                                const documentTypes = {
+                                  carta_supervisor: 'Carta del Supervisor',
+                                  certificado_alumno: 'Certificado del Alumno',
+                                  formulario_inscripcion: 'Formulario de Inscripción',
+                                  autorizacion_empresa: 'Autorización de la Empresa'
+                                };
+
+                                const documentsList = Object.entries(documentTypes)
+                                  .map(([key, title]) => {
+                                    const filepath = practica[key];
+                                    return filepath ? { type: key, title, filepath } : null;
+                                  })
+                                  .filter(Boolean);
+
+                                const handleDownload = async (type) => {
+                                  try {
+                                    const response = await axiosInstance.get(
+                                      `${API_URL}/documentos/descargar/${type}/${practica.id}`,
+                                      { responseType: 'blob' }
+                                    );
+                                    
+                                    const url = window.URL.createObjectURL(new Blob([response.data]));
+                                    const link = document.createElement('a');
+                                    link.href = url;
+                                    link.setAttribute('download', practica[type].split('/').pop());
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    link.remove();
+                                  } catch (error) {
+                                    Swal.fire('Error', 'No se pudo descargar el documento', 'error');
+                                  }
+                                };
+
+                                const handleDelete = async (type) => {
+                                  const result = await Swal.fire({
+                                    title: '¿Eliminar documento?',
+                                    text: '¿Estás seguro de que deseas eliminar este documento?',
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#d33',
+                                    cancelButtonColor: '#3085d6',
+                                    confirmButtonText: 'Sí, eliminar',
+                                    cancelButtonText: 'Cancelar'
+                                  });
+
+                                  if (result.isConfirmed) {
+                                    try {
+                                      const response = await axiosInstance.delete(
+                                        `${API_URL}/documentos/${type}/${practica.id}`
+                                      );
+                                      
+                                      if (response.data.status === 'success') {
+                                        Swal.fire('Éxito', 'Documento eliminado correctamente', 'success')
+                                          .then(() => {
+                                            // Recargar la lista de prácticas
+                                            fetchPracticas();
+                                          });
+                                      }
+                                    } catch (error) {
+                                      Swal.fire('Error', 'No se pudo eliminar el documento', 'error');
+                                    }
+                                  }
+                                };
+
+                                await Swal.fire({
+                                  title: 'Documentos de la Práctica',
+                                  html: documentsList.length > 0 
+                                      ? documentsList.map(doc => `
+                                      <div class="flex justify-between items-center p-2 border-b">
+                                          <span>${doc.title}</span>
+                                          <div>
+                                          <button 
+                                              onclick="window.handleDownload('${doc.type}')"
+                                              class="px-3 py-1 bg-blue-500 text-white rounded-md mx-1 text-sm"
+                                          >
+                                              Descargar
+                                          </button>
+                                          <button 
+                                              onclick="window.handleDelete('${doc.type}')"
+                                              class="px-3 py-1 bg-red-500 text-white rounded-md mx-1 text-sm"
+                                          >
+                                              Eliminar
+                                          </button>
+                                          </div>
+                                      </div>
+                                      `).join('')
+                                      : '<p class="text-gray-500">No hay documentos disponibles</p>',
+                                  showCloseButton: true,
+                                  showConfirmButton: false,
+                                  width: '600px',
+                                  didOpen: () => {
+                                      window.handleDownload = handleDownload;
+                                      window.handleDelete = handleDelete;
+                                  }
+                                  });
+                              }}
+                            >
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              Ver Documentos
+                            </button>
+                                                        
                           </div>
                         </td>
                       </tr>

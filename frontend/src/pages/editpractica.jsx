@@ -17,8 +17,27 @@ const EditPractica = () => {
     contacto_supervisor: '',
     nota: ''
   });
+  const [documentos, setDocumentos] = useState({
+    carta_supervisor: null,
+    certificado_alumno: null,
+    formulario_inscripcion: null,
+    autorizacion_empresa: null
+  });
+  const [documentosActuales, setDocumentosActuales] = useState({
+    carta_supervisor: null,
+    certificado_alumno: null,
+    formulario_inscripcion: null,
+    autorizacion_empresa: null
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const DOCUMENT_LABELS = {
+    carta_supervisor: 'Carta del Supervisor',
+    certificado_alumno: 'Certificado del Alumno',
+    formulario_inscripcion: 'Formulario de Inscripción',
+    autorizacion_empresa: 'Autorización de la Empresa'
+  };
 
   useEffect(() => {
     const fetchPractica = async () => {
@@ -36,6 +55,13 @@ const EditPractica = () => {
               supervisor: practica.supervisor,
               contacto_supervisor: practica.contacto_supervisor,
               nota: practica.nota || ''
+            });
+            
+            setDocumentosActuales({
+              carta_supervisor: practica.carta_supervisor,
+              certificado_alumno: practica.certificado_alumno,
+              formulario_inscripcion: practica.formulario_inscripcion,
+              autorizacion_empresa: practica.autorizacion_empresa
             });
           }
         }
@@ -57,37 +83,65 @@ const EditPractica = () => {
     });
   };
 
+  const handleFileChange = (e) => {
+    const { name, files } = e.target;
+    setDocumentos({
+      ...documentos,
+      [name]: files[0]
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-        const response = await axiosInstance.put(`http://localhost:5000/api/practicas/${id}`, {
-            empresa: formData.empresa,
-            fecha_inicio: formData.fecha_inicio,
-            fecha_termino: formData.fecha_termino,
-            supervisor: formData.supervisor,
-            contacto_supervisor: formData.contacto_supervisor,
-            nota: formData.nota
+      // Actualizar los datos básicos
+      const response = await axiosInstance.put(`http://localhost:5000/api/practicas/${id}`, {
+        empresa: formData.empresa,
+        fecha_inicio: formData.fecha_inicio,
+        fecha_termino: formData.fecha_termino,
+        supervisor: formData.supervisor,
+        contacto_supervisor: formData.contacto_supervisor,
+        nota: formData.nota
+      });
+
+      // Subir nuevos documentos si existen
+      const uploadPromises = Object.entries(documentos)
+        .filter(([_, file]) => file !== null)
+        .map(async ([tipo, file]) => {
+          const formData = new FormData();
+          formData.append('file', file);
+          return axiosInstance.post(
+            `http://localhost:5000/api/documentos/subir/${tipo}/${id}`,
+            formData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            }
+          );
         });
 
-        if (response.data.status === 'success') {
-            await Swal.fire({
-                title: '¡Éxito!',
-                text: 'Práctica actualizada exitosamente',
-                icon: 'success',
-                confirmButtonText: 'Aceptar'
-            });
-            navigate('/PracticaInicial');
-        }
-    } catch (err) {
-        const errorMessage = err.response?.data?.error || 'Error al actualizar la práctica';
-        Swal.fire({
-            title: 'Error',
-            text: errorMessage,
-            icon: 'error',
-            confirmButtonText: 'Aceptar'
+      await Promise.all(uploadPromises);
+
+      if (response.data.status === 'success') {
+        await Swal.fire({
+          title: '¡Éxito!',
+          text: 'Práctica actualizada exitosamente',
+          icon: 'success',
+          confirmButtonText: 'Aceptar'
         });
+        navigate('/PracticaInicial');
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || 'Error al actualizar la práctica';
+      Swal.fire({
+        title: 'Error',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonText: 'Aceptar'
+      });
     }
-};
+  };
 
   if (loading) {
     return (
@@ -120,6 +174,7 @@ const EditPractica = () => {
           <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-xl p-8">
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">Editar Práctica Inicial</h2>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Campos existentes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Estudiante
@@ -130,6 +185,7 @@ const EditPractica = () => {
                   value={formData.estudiante}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50"
+                  readOnly
                 />
               </div>
 
@@ -143,6 +199,7 @@ const EditPractica = () => {
                   value={formData.estudiante_email}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50"
+                  readOnly
                 />
               </div>
 
@@ -170,7 +227,7 @@ const EditPractica = () => {
                     name="fecha_inicio"
                     value={formData.fecha_inicio}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
@@ -183,7 +240,7 @@ const EditPractica = () => {
                     name="fecha_termino"
                     value={formData.fecha_termino}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
@@ -225,8 +282,38 @@ const EditPractica = () => {
                   name="nota"
                   value={formData.nota}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-50"
+                  min="1"
+                  max="7"
+                  step="0.1"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 />
+              </div>
+
+              {/* Sección de documentos simplificada */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">Documentos</h3>
+                
+                {Object.entries(DOCUMENT_LABELS).map(([tipo, label]) => (
+                  <div key={tipo} className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      {label}
+                    </label>
+                    <div className="space-y-2">
+                      {documentosActuales[tipo] && (
+                        <span className="block text-sm text-gray-600">
+                          Documento actual: {documentosActuales[tipo].split('/').pop()}
+                        </span>
+                      )}
+                      <input
+                        type="file"
+                        name={tipo}
+                        accept=".pdf"
+                        onChange={handleFileChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <div className="flex justify-end space-x-4">

@@ -26,12 +26,14 @@ def create_app():
     from routes.profesores import profesores_bp
     from routes.proyectos import proyectos_bp
     from routes.practicas import practicas_bp
+    from routes.documentos import documentos_bp
     
     app.register_blueprint(auth_bp, url_prefix='/api')
     app.register_blueprint(estudiantes_bp, url_prefix='/api')
     app.register_blueprint(profesores_bp, url_prefix='/api')
     app.register_blueprint(proyectos_bp, url_prefix='/api')
     app.register_blueprint(practicas_bp, url_prefix='/api')
+    app.register_blueprint(documentos_bp, url_prefix='/api')
     
     with app.app_context():
         db.create_all()

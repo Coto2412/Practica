@@ -18,6 +18,14 @@ const NuevaPracticaInicial = () => {
     supervisor: '',
     contacto_supervisor: '',
   });
+  
+  // Estado para los archivos
+  const [documentos, setDocumentos] = useState({
+    carta_supervisor: null,
+    certificado_alumno: null,
+    formulario_inscripcion: null,
+    autorizacion_empresa: null
+  });
 
   useEffect(() => {
     const fetchEstudiantes = async () => {
@@ -44,16 +52,86 @@ const NuevaPracticaInicial = () => {
     });
   };
 
+  const handleFileChange = (e) => {
+    const { name, files } = e.target;
+    setDocumentos({
+      ...documentos,
+      [name]: files[0]
+    });
+  };
+
+  const uploadDocuments = async (practicaId) => {
+    const uploadResults = [];
+  
+    for (const [tipo, archivo] of Object.entries(documentos)) {
+      if (archivo) {
+        const formData = new FormData();
+        formData.append('file', archivo);
+  
+        try {
+          const response = await axiosInstance.post(
+            `http://localhost:5000/api/documentos/subir/${tipo}/${practicaId}`,
+            formData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            }
+          );
+          
+          if (response.data.status === 'success') {
+            uploadResults.push({
+              tipo,
+              filepath: response.data.filepath
+            });
+          }
+        } catch (error) {
+          console.error(`Error al subir ${tipo}: ${error.message}`);
+        }
+      }
+    }
+    
+    return uploadResults;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const response = await axiosInstance.post('http://localhost:5000/api/practicas/inicial', formData);
+      
       if (response.data.status === 'success') {
+        const practicaId = response.data.practica.id;
+        const hasDocuments = Object.values(documentos).some(doc => doc !== null);
+        
+        if (hasDocuments) {
+          try {
+            const uploadResults = await uploadDocuments(practicaId);
+            
+            // Actualizar la práctica con las rutas de los documentos
+            const documentUpdates = {};
+            uploadResults.forEach(result => {
+              documentUpdates[result.tipo] = result.filepath;
+            });
+            
+            await axiosInstance.put(`http://localhost:5000/api/practicas/${practicaId}`, {
+              ...response.data.data,
+              ...documentUpdates
+            });
+            
+          } catch (docError) {
+            console.error('Error al subir documentos:', docError);
+            Swal.fire({
+              title: 'Advertencia',
+              text: 'La práctica se creó pero hubo problemas con algunos documentos.',
+              icon: 'warning'
+            });
+          }
+        }
+        
         Swal.fire({
           title: '¡Éxito!',
           text: 'Práctica inicial creada exitosamente',
           icon: 'success',
-          confirmButtonText: 'Aceptar'
         }).then(() => {
           navigate('/PracticaInicial');
         });
@@ -63,8 +141,7 @@ const NuevaPracticaInicial = () => {
       Swal.fire({
         title: 'Error',
         text: errorMessage,
-        icon: 'error',
-        confirmButtonText: 'Aceptar'
+        icon: 'error'
       });
     }
   };
@@ -100,6 +177,7 @@ const NuevaPracticaInicial = () => {
             <h2 className="text-2xl font-semibold text-gray-800 mb-6">Nueva Práctica Inicial</h2>
             
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Campos existentes */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Estudiante
@@ -190,6 +268,63 @@ const NuevaPracticaInicial = () => {
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 />
+              </div>
+
+              {/* Nuevos campos para documentos */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">Documentos Requeridos</h3>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Carta del Supervisor (PDF)
+                  </label>
+                  <input
+                    type="file"
+                    name="carta_supervisor"
+                    accept=".pdf"
+                    onChange={handleFileChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Certificado del Alumno (PDF)
+                  </label>
+                  <input
+                    type="file"
+                    name="certificado_alumno"
+                    accept=".pdf"
+                    onChange={handleFileChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Formulario de Inscripción (PDF)
+                  </label>
+                  <input
+                    type="file"
+                    name="formulario_inscripcion"
+                    accept=".pdf"
+                    onChange={handleFileChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Autorización de la Empresa (PDF)
+                  </label>
+                  <input
+                    type="file"
+                    name="autorizacion_empresa"
+                    accept=".pdf"
+                    onChange={handleFileChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end space-x-4">
