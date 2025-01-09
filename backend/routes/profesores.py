@@ -10,7 +10,7 @@ profesores_bp = Blueprint('profesores', __name__)
 @jwt_required()
 def obtener_profesores():
     try:
-        profesores = Profesor.query.all()
+        profesores = Profesor.query.filter_by(activo=True).all() 
         
         resultado = []
         for profesor in profesores:
@@ -105,16 +105,22 @@ def eliminar_profesor(id):
     try:
         profesor = Profesor.query.get_or_404(id)
         
-        proyectos_guiados = Proyecto.query.filter_by(profesor_guia_id=profesor.id).first()
-        proyectos_informados = Proyecto.query.filter_by(profesor_informante_id=profesor.id).first()
+        proyectos_guiados = Proyecto.query.filter_by(profesor_guia_id=profesor.id)\
+                                        .filter(Proyecto.nota.is_(None))\
+                                        .count()
         
-        if proyectos_guiados or proyectos_informados:
+        proyectos_informados = Proyecto.query.filter_by(profesor_informante_id=profesor.id)\
+                                           .filter(Proyecto.nota.is_(None))\
+                                           .count()
+        
+        # Si tiene proyectos activos, no permitir la eliminación
+        if proyectos_guiados > 0 or proyectos_informados > 0:
             return jsonify({
-                'error': 'No se puede eliminar el profesor porque tiene proyectos asociados',
+                'error': f'No se puede eliminar el profesor porque tiene {proyectos_guiados + proyectos_informados} proyecto(s) activo(s)',
                 'status': 'error'
             }), 400
-            
-        db.session.delete(profesor)
+        
+        profesor.activo = False
         db.session.commit()
         
         return jsonify({

@@ -102,7 +102,6 @@ const EditPracticaProfesional = () => {
         nota: formData.nota ? parseFloat(formData.nota) : null
       });
 
-      // Subir nuevos documentos
       const uploadPromises = Object.entries(documentos)
         .filter(([_, file]) => file !== null)
         .map(async ([tipo, file]) => {

@@ -130,7 +130,11 @@ def obtener_practicas_profesionales():
                 'fecha_termino': practica.fecha_termino.strftime('%Y-%m-%d'),
                 'supervisor': practica.supervisor,
                 'contacto_supervisor': practica.contacto_supervisor,
-                'nota': practica.nota if practica.nota else None
+                'nota': practica.nota if practica.nota else None,
+                'carta_supervisor': practica.carta_supervisor if hasattr(practica, 'carta_supervisor') else None,
+                'certificado_alumno': practica.certificado_alumno if hasattr(practica, 'certificado_alumno') else None,
+                'formulario_inscripcion': practica.formulario_inscripcion if hasattr(practica, 'formulario_inscripcion') else None,
+                'autorizacion_empresa': practica.autorizacion_empresa if hasattr(practica, 'autorizacion_empresa') else None
             }
             resultado.append(practica_info)
             

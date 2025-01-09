@@ -138,7 +138,7 @@ const PracticaInicial = () => {
                     fetchPracticas={fetchPracticas}
                     axiosInstance={axiosInstance}
                     API_URL={API_URL}
-                    tipo="inicial"
+                    tipoPractica="inicial"
                 />
                 ) : (
               <div className="overflow-x-auto border border-gray-200 rounded-lg">

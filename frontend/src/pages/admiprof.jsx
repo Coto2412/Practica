@@ -219,37 +219,48 @@ const AdminProfesores = () => {
   
 
     const handleDelete = async (id) => {
-        const result = await Swal.fire({
-            title: '¿Estás seguro?',
-            text: 'No podrás revertir esto',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar',
-        });
-    
-        if (result.isConfirmed) {
-            try {
-                const response = await axiosInstance.delete(`${API_URL}/profesores/${id}`);
-                if (response.data.status === 'success') {
-                    await Swal.fire({
-                        icon: 'success',
-                        title: 'Eliminado',
-                        text: 'El profesor ha sido eliminado con éxito',
-                    });
-                    fetchProfesores(); 
-                }
-            } catch (err) {
-                console.error('Error al eliminar:', err);
-                const errorMessage = err.response?.data?.error || 'Error al eliminar el profesor';
-                await Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: errorMessage,
-                });
-            }
-        }
-    };
+      if (profesores.find(p => p.id === id).proyectos_guiados > 0 || 
+          profesores.find(p => p.id === id).proyectos_informados > 0) {
+          await Swal.fire({
+              icon: 'error',
+              title: 'No se puede eliminar',
+              text: 'El profesor tiene proyectos activos asignados',
+              confirmButtonText: 'Entendido'
+          });
+          return;
+      }
+  
+      const result = await Swal.fire({
+          title: '¿Estás seguro?',
+          text: 'No podrás revertir esto',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, eliminar',
+          cancelButtonText: 'Cancelar',
+      });
+  
+      if (result.isConfirmed) {
+          try {
+              const response = await axiosInstance.delete(`${API_URL}/profesores/${id}`);
+              if (response.data.status === 'success') {
+                  await Swal.fire({
+                      icon: 'success',
+                      title: 'Eliminado',
+                      text: 'El profesor ha sido eliminado con éxito',
+                  });
+                  fetchProfesores(); 
+              }
+          } catch (err) {
+              console.error('Error al eliminar:', err);
+              const errorMessage = err.response?.data?.error || 'Error al eliminar el profesor';
+              await Swal.fire({
+                  icon: 'error',
+                  title: 'Error',
+                  text: errorMessage, 
+              });
+          }
+      }
+  };
 
   const filteredProfesores = profesores.filter(profesor =>
     profesor.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||

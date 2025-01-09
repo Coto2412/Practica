@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import Swal from 'sweetalert2';
 
-const PracticaAcordeon = ({ practicas, handleDelete, fetchPracticas, axiosInstance, API_URL }) => {
+const PracticaAcordeon = ({ practicas, handleDelete, fetchPracticas, axiosInstance, API_URL, tipoPractica }) => {
   const navigate = useNavigate();
   const [openYears, setOpenYears] = useState(new Set());
   const [openSemesters, setOpenSemesters] = useState(new Set());
   const [openMonths, setOpenMonths] = useState(new Set());
 
   const getEditPath = (practicaId) => {
-    return tipo === 'profesional' 
+    return tipoPractica === 'profesional' 
       ? `/EditarPracticaProfesional/${practicaId}`
       : `/EditarPractica/${practicaId}`;
   };
@@ -232,13 +232,36 @@ const PracticaAcordeon = ({ practicas, handleDelete, fetchPracticas, axiosInstan
                                                         autorizacion_empresa: 'Autorización de la Empresa'
                                                       };
 
+
                                                       const documentsList = Object.entries(documentTypes)
                                                         .map(([key, title]) => {
                                                           const filepath = practica[key];
                                                           return filepath ? { type: key, title, filepath } : null;
                                                         })
                                                         .filter(Boolean);
-
+                                                      // Verificar el HTML que se está generando
+                                                      const htmlContent = documentsList.length > 0 
+                                                        ? documentsList.map(doc => `
+                                                          <div class="flex justify-between items-center p-2 border-b">
+                                                            <span>${doc.title}</span>
+                                                            <div>
+                                                              <button 
+                                                                onclick="handleDownload('${doc.type}')"
+                                                                class="px-3 py-1 bg-blue-500 text-white rounded-md mx-1 text-sm"
+                                                              >
+                                                                Descargar
+                                                              </button>
+                                                              <button 
+                                                                onclick="handleDelete('${doc.type}')"
+                                                                class="px-3 py-1 bg-red-500 text-white rounded-md mx-1 text-sm"
+                                                              >
+                                                                Eliminar
+                                                              </button>
+                                                            </div>
+                                                          </div>
+                                                        `).join('')
+                                                        : '<p class="text-gray-500">No hay documentos disponibles</p>';
+                                                      // Modificar la forma en que definimos las funciones
                                                       const handleDownload = async (type) => {
                                                         try {
                                                           const response = await axiosInstance.get(
@@ -254,11 +277,13 @@ const PracticaAcordeon = ({ practicas, handleDelete, fetchPracticas, axiosInstan
                                                           link.click();
                                                           link.remove();
                                                         } catch (error) {
+                                                          console.error('Error en descarga:', error);
                                                           Swal.fire('Error', 'No se pudo descargar el documento', 'error');
                                                         }
                                                       };
 
                                                       const handleDelete = async (type) => {
+                                                        console.log('Intentando eliminar:', type);
                                                         const result = await Swal.fire({
                                                           title: '¿Eliminar documento?',
                                                           text: '¿Estás seguro de que deseas eliminar este documento?',
@@ -279,46 +304,32 @@ const PracticaAcordeon = ({ practicas, handleDelete, fetchPracticas, axiosInstan
                                                             if (response.data.status === 'success') {
                                                               Swal.fire('Éxito', 'Documento eliminado correctamente', 'success')
                                                                 .then(() => {
-                                                                  // Recargar la lista de prácticas
                                                                   fetchPracticas();
                                                                 });
                                                             }
                                                           } catch (error) {
+                                                            console.error('Error en eliminación:', error);
                                                             Swal.fire('Error', 'No se pudo eliminar el documento', 'error');
                                                           }
                                                         }
                                                       };
 
+                                                      // Asignar las funciones al objeto window
+                                                      window.handleDownload = handleDownload;
+                                                      window.handleDelete = handleDelete;
+
+                                                      // Mostrar el modal con un willOpen callback
                                                       await Swal.fire({
                                                         title: 'Documentos de la Práctica',
-                                                        html: documentsList.length > 0 
-                                                          ? documentsList.map(doc => `
-                                                            <div class="flex justify-between items-center p-2 border-b">
-                                                              <span>${doc.title}</span>
-                                                              <div>
-                                                                <button 
-                                                                  onclick="window.handleDownload('${doc.type}')"
-                                                                  class="px-3 py-1 bg-blue-500 text-white rounded-md mx-1 text-sm"
-                                                                >
-                                                                  Descargar
-                                                                </button>
-                                                                <button 
-                                                                  onclick="window.handleDelete('${doc.type}')"
-                                                                  class="px-3 py-1 bg-red-500 text-white rounded-md mx-1 text-sm"
-                                                                >
-                                                                  Eliminar
-                                                                </button>
-                                                              </div>
-                                                            </div>
-                                                          `).join('')
-                                                          : '<p class="text-gray-500">No hay documentos disponibles</p>',
+                                                        html: htmlContent,
                                                         showCloseButton: true,
                                                         showConfirmButton: false,
                                                         width: '600px',
-                                                        didOpen: () => {
-                                                          // Asignar las funciones al objeto window para poder accederlas desde el HTML
-                                                          window.handleDownload = handleDownload;
-                                                          window.handleDelete = handleDelete;
+                                                        willOpen: () => {
+                                                          console.log('Modal abierto, verificando funciones:', {
+                                                            handleDownload: !!window.handleDownload,
+                                                            handleDelete: !!window.handleDelete
+                                                          });
                                                         }
                                                       });
                                                     }}
@@ -352,32 +363,33 @@ const PracticaAcordeon = ({ practicas, handleDelete, fetchPracticas, axiosInstan
   );
 };
 
-PracticaAcordeon.propTypes = {
-  practicas: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      estudiante: PropTypes.string.isRequired,
-      estudiante_email: PropTypes.string.isRequired,
-      empresa: PropTypes.string.isRequired,
-      fecha_inicio: PropTypes.string.isRequired,
-      fecha_termino: PropTypes.string.isRequired,
-      supervisor: PropTypes.string.isRequired,
-      contacto_supervisor: PropTypes.string.isRequired,
-      nota: PropTypes.number
-    })
-  ).isRequired,
-  handleDelete: PropTypes.func.isRequired,
-  fetchPracticas: PropTypes.func.isRequired,
-  axiosInstance: PropTypes.oneOfType([
-    PropTypes.func,
-    PropTypes.shape({
-      get: PropTypes.func,
-      put: PropTypes.func,
-      post: PropTypes.func,
-      delete: PropTypes.func
-    })
-  ]).isRequired,
-  API_URL: PropTypes.string.isRequired
-};
+  PracticaAcordeon.propTypes = {
+    practicas: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.number.isRequired,
+        estudiante: PropTypes.string.isRequired,
+        estudiante_email: PropTypes.string.isRequired,
+        empresa: PropTypes.string.isRequired,
+        fecha_inicio: PropTypes.string.isRequired,
+        fecha_termino: PropTypes.string.isRequired,
+        supervisor: PropTypes.string.isRequired,
+        contacto_supervisor: PropTypes.string.isRequired,
+        nota: PropTypes.number
+      })
+    ).isRequired,
+    handleDelete: PropTypes.func.isRequired,
+    fetchPracticas: PropTypes.func.isRequired,
+    axiosInstance: PropTypes.oneOfType([
+      PropTypes.func,
+      PropTypes.shape({
+        get: PropTypes.func,
+        put: PropTypes.func,
+        post: PropTypes.func,
+        delete: PropTypes.func
+      })
+    ]).isRequired,
+    API_URL: PropTypes.string.isRequired,
+    tipoPractica: PropTypes.oneOf(['profesional', 'inicial']).isRequired
+  };
 
 export default PracticaAcordeon;

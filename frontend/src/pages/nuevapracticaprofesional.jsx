@@ -17,6 +17,10 @@ const NuevaPracticaProfesional = () => {
     fecha_termino: '',
     supervisor: '',
     contacto_supervisor: '',
+    carta_supervisor: '',
+    certificado_alumno: '',
+    formulario_inscripcion: '',
+    autorizacion_empresa: ''
   });
   
   // Estado para los archivos
@@ -84,9 +88,16 @@ const NuevaPracticaProfesional = () => {
               tipo,
               filepath: response.data.filepath
             });
+            
+            // Actualizar el formData con la ruta del documento
+            setFormData(prevData => ({
+              ...prevData,
+              [tipo]: response.data.filepath
+            }));
           }
         } catch (error) {
           console.error(`Error al subir ${tipo}: ${error.message}`);
+          throw error; // Propagar el error para manejarlo en handleSubmit
         }
       }
     }
@@ -97,26 +108,36 @@ const NuevaPracticaProfesional = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axiosInstance.post('http://localhost:5000/api/practicas/profesional', formData);
+      // Primero crear la práctica profesional
+      const practicaResponse = await axiosInstance.post('http://localhost:5000/api/practicas/profesional', formData);
       
-      if (response.data.status === 'success') {
-        const practicaId = response.data.practica.id;
+      if (practicaResponse.data.status === 'success') {
+        const practicaId = practicaResponse.data.practica.id;
         const hasDocuments = Object.values(documentos).some(doc => doc !== null);
         
         if (hasDocuments) {
           try {
+            // Subir los documentos
             const uploadResults = await uploadDocuments(practicaId);
             
-            // Actualizar la práctica con las rutas de los documentos
+            // Crear objeto con las rutas de los documentos
             const documentUpdates = {};
             uploadResults.forEach(result => {
               documentUpdates[result.tipo] = result.filepath;
             });
             
-            await axiosInstance.put(`http://localhost:5000/api/practicas/${practicaId}`, {
-              ...response.data.data,
-              ...documentUpdates
-            });
+            // Actualizar la práctica con las rutas de los documentos
+            const updateResponse = await axiosInstance.put(
+              `http://localhost:5000/api/practicas/${practicaId}`,
+              {
+                ...practicaResponse.data.practica,
+                ...documentUpdates
+              }
+            );
+            
+            if (updateResponse.data.status !== 'success') {
+              throw new Error('Error al actualizar la práctica con los documentos');
+            }
             
           } catch (docError) {
             console.error('Error al subir documentos:', docError);
@@ -125,9 +146,11 @@ const NuevaPracticaProfesional = () => {
               text: 'La práctica se creó pero hubo problemas con algunos documentos.',
               icon: 'warning'
             });
+            return;
           }
         }
         
+        // Mostrar mensaje de éxito y redireccionar
         Swal.fire({
           title: '¡Éxito!',
           text: 'Práctica profesional creada exitosamente',
