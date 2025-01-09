@@ -13,8 +13,6 @@ const PracticaInicial = () => {
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'accordion'
 
-  const API_URL = 'http://localhost:5000/api';
-
   useEffect(() => {
     fetchPracticas();
   }, []);
@@ -22,7 +20,7 @@ const PracticaInicial = () => {
   const fetchPracticas = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`${API_URL}/practicas/inicial`);
+      const response = await axiosInstance.get('/practicas/inicial');
       if (response.data.status === 'success') {
         setPracticas(response.data.data);
       }
@@ -48,7 +46,7 @@ const PracticaInicial = () => {
       });
 
       if (result.isConfirmed) {
-        const response = await axiosInstance.delete(`${API_URL}/practicas/${id}`);
+        const response = await axiosInstance.delete(`/practicas/${id}`);
         if (response.data.status === 'success') {
           Swal.fire('Eliminado', 'La práctica ha sido eliminada.', 'success');
           fetchPracticas();
@@ -57,6 +55,57 @@ const PracticaInicial = () => {
     } catch (error) {
       console.error(error);
       Swal.fire('Error', 'No se pudo eliminar la práctica.', 'error');
+    }
+  };
+
+  const handleDeleteDocument = async (type, practicaId) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/documentos/${type}/${practicaId}`
+      );
+      
+      if (response.data.status === 'success') {
+        await Swal.fire('Éxito', 'Documento eliminado correctamente', 'success');
+        fetchPracticas();
+      }
+    } catch (error) {
+      Swal.fire('Error', 'No se pudo eliminar el documento', 'error');
+    }
+  };
+
+  const handleDownloadDocument = async (type, practicaId, filename) => {
+    try {
+      const response = await axiosInstance.get(
+        `/documentos/descargar/${type}/${practicaId}`,
+        { responseType: 'blob' }
+      );
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      Swal.fire('Error', 'No se pudo descargar el documento', 'error');
+    }
+  };
+
+  const handleDeleteGrade = async (practica) => {
+    try {
+      const response = await axiosInstance.put(`/practicas/${practica.id}`, {
+        ...practica,
+        nota: null
+      });
+      
+      if (response.data.status === 'success') {
+        Swal.fire('Éxito', 'Nota eliminada correctamente', 'success');
+        fetchPracticas();
+      }
+    } catch (error) {
+      console.error(error);
+      Swal.fire('Error', 'No se pudo eliminar la nota', 'error');
     }
   };
 
@@ -82,6 +131,54 @@ const PracticaInicial = () => {
       </div>
     );
   }
+
+  const showDocuments = async (practica) => {
+    const documentTypes = {
+      carta_supervisor: 'Carta del Supervisor',
+      certificado_alumno: 'Certificado del Alumno',
+      formulario_inscripcion: 'Formulario de Inscripción',
+      autorizacion_empresa: 'Autorización de la Empresa'
+    };
+
+    const documentsList = Object.entries(documentTypes)
+      .map(([key, title]) => {
+        const filepath = practica[key];
+        return filepath ? { type: key, title, filepath } : null;
+      })
+      .filter(Boolean);
+
+    await Swal.fire({
+      title: 'Documentos de la Práctica',
+      html: documentsList.length > 0 
+        ? documentsList.map(doc => `
+          <div class="flex justify-between items-center p-2 border-b">
+            <span>${doc.title}</span>
+            <div>
+              <button 
+                onclick="window.handleDownload('${doc.type}', ${practica.id}, '${doc.filepath.split('/').pop()}')"
+                class="px-3 py-1 bg-blue-500 text-white rounded-md mx-1 text-sm"
+              >
+                Descargar
+              </button>
+              <button 
+                onclick="window.handleDelete('${doc.type}', ${practica.id})"
+                class="px-3 py-1 bg-red-500 text-white rounded-md mx-1 text-sm"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        `).join('')
+        : '<p class="text-gray-500">No hay documentos disponibles</p>',
+      showCloseButton: true,
+      showConfirmButton: false,
+      width: '600px',
+      didOpen: () => {
+        window.handleDownload = handleDownloadDocument;
+        window.handleDelete = handleDeleteDocument;
+      }
+    });
+  };
 
   return (
     <div>
@@ -115,7 +212,8 @@ const PracticaInicial = () => {
                     viewMode === 'accordion'
                       ? 'bg-blue-500 text-white'
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}>
+                  }`}
+                >
                   Vista por Fecha
                 </button>
               </div>
@@ -132,15 +230,14 @@ const PracticaInicial = () => {
             </div>
 
             {viewMode === 'accordion' ? (
-                <PracticaAcordeon
-                    practicas={filteredPracticas}
-                    handleDelete={handleDelete}
-                    fetchPracticas={fetchPracticas}
-                    axiosInstance={axiosInstance}
-                    API_URL={API_URL}
-                    tipoPractica="inicial"
-                />
-                ) : (
+              <PracticaAcordeon
+                practicas={filteredPracticas}
+                handleDelete={handleDelete}
+                fetchPracticas={fetchPracticas}
+                axiosInstance={axiosInstance}
+                tipoPractica="inicial"
+              />
+            ) : (
               <div className="overflow-x-auto border border-gray-200 rounded-lg">
                 <table className="w-full divide-y divide-gray-200">
                   <thead className="bg-blue-200">
@@ -171,35 +268,7 @@ const PracticaInicial = () => {
                             <div className="flex items-center space-x-2">
                               <span>{practica.nota}</span>
                               <button
-                                onClick={async () => {
-                                  const result = await Swal.fire({
-                                    title: '¿Eliminar nota?',
-                                    text: '¿Estás seguro de que deseas eliminar la nota?',
-                                    icon: 'warning',
-                                    showCancelButton: true,
-                                    confirmButtonColor: '#d33',
-                                    cancelButtonColor: '#3085d6',
-                                    confirmButtonText: 'Sí, eliminar',
-                                    cancelButtonText: 'Cancelar',
-                                  });
-
-                                  if (result.isConfirmed) {
-                                    try {
-                                      const response = await axiosInstance.put(`${API_URL}/practicas/${practica.id}`, {
-                                        ...practica,
-                                        nota: null
-                                      });
-                                      
-                                      if (response.data.status === 'success') {
-                                        Swal.fire('Éxito', 'Nota eliminada correctamente', 'success');
-                                        fetchPracticas();
-                                      }
-                                    } catch (error) {
-                                      console.error(error);
-                                      Swal.fire('Error', 'No se pudo eliminar la nota', 'error');
-                                    }
-                                  }
-                                }}
+                                onClick={() => handleDeleteGrade(practica)}
                                 className="text-red-600 hover:text-red-800"
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -232,109 +301,13 @@ const PracticaInicial = () => {
                               Eliminar
                             </button>
                             <button
-                                className="inline-flex items-center px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors duration-200"
-                                onClick={async () => {
-                                const documentTypes = {
-                                    carta_supervisor: 'Carta del Supervisor',
-                                    certificado_alumno: 'Certificado del Alumno',
-                                    formulario_inscripcion: 'Formulario de Inscripción',
-                                    autorizacion_empresa: 'Autorización de la Empresa'
-                                };
-                            
-                                const documentsList = Object.entries(documentTypes)
-                                    .map(([key, title]) => {
-                                    const filepath = practica[key];
-                                    return filepath ? { type: key, title, filepath } : null;
-                                    })
-                                    .filter(Boolean);
-                            
-                                    const handleDownload = async (type) => {
-                                    try {
-                                    const response = await axiosInstance.get(
-                                    `${API_URL}/documentos/descargar/${type}/${practica.id}`,
-                                    { responseType: 'blob' }
-                                    );
-                                    
-                                    const url = window.URL.createObjectURL(new Blob([response.data]));
-                                    const link = document.createElement('a');
-                                    link.href = url;
-                                    link.setAttribute('download', practica[type].split('/').pop());
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    link.remove();
-                                } catch (error) {
-                                    Swal.fire('Error', 'No se pudo descargar el documento', 'error');
-                                }
-                                };
-
-                                const handleDelete = async (type) => {
-                                const result = await Swal.fire({
-                                    title: '¿Eliminar documento?',
-                                    text: '¿Estás seguro de que deseas eliminar este documento?',
-                                    icon: 'warning',
-                                    showCancelButton: true,
-                                    confirmButtonColor: '#d33',
-                                    cancelButtonColor: '#3085d6',
-                                    confirmButtonText: 'Sí, eliminar',
-                                    cancelButtonText: 'Cancelar'
-                                });
-
-                                if (result.isConfirmed) {
-                                    try {
-                                    const response = await axiosInstance.delete(
-                                        `${API_URL}/documentos/${type}/${practica.id}`
-                                    );
-                                    
-                                    if (response.data.status === 'success') {
-                                        Swal.fire('Éxito', 'Documento eliminado correctamente', 'success')
-                                        .then(() => {
-                                            // Recargar la lista de prácticas
-                                            fetchPracticas();
-                                        });
-                                    }
-                                    } catch (error) {
-                                    Swal.fire('Error', 'No se pudo eliminar el documento', 'error');
-                                    }
-                                }
-                                };
-
-                                await Swal.fire({
-                                title: 'Documentos de la Práctica',
-                                html: documentsList.length > 0 
-                                    ? documentsList.map(doc => `
-                                    <div class="flex justify-between items-center p-2 border-b">
-                                        <span>${doc.title}</span>
-                                        <div>
-                                        <button 
-                                            onclick="window.handleDownload('${doc.type}')"
-                                            class="px-3 py-1 bg-blue-500 text-white rounded-md mx-1 text-sm"
-                                        >
-                                            Descargar
-                                        </button>
-                                        <button 
-                                            onclick="window.handleDelete('${doc.type}')"
-                                            class="px-3 py-1 bg-red-500 text-white rounded-md mx-1 text-sm"
-                                        >
-                                            Eliminar
-                                        </button>
-                                        </div>
-                                    </div>
-                                    `).join('')
-                                    : '<p class="text-gray-500">No hay documentos disponibles</p>',
-                                showCloseButton: true,
-                                showConfirmButton: false,
-                                width: '600px',
-                                didOpen: () => {
-                                    window.handleDownload = handleDownload;
-                                    window.handleDelete = handleDelete;
-                                }
-                                });
-                            }}
+                              className="inline-flex items-center px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors duration-200"
+                              onClick={() => showDocuments(practica)}
                             >
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Ver Documentos
+                              </svg>
+                              Ver Documentos
                             </button>
                           </div>
                         </td>

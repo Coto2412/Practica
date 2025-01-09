@@ -9,8 +9,6 @@ const AdminProfesores = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
   
-    const API_URL = 'http://localhost:5000/api';
-  
     useEffect(() => {
       fetchProfesores();
     }, []);
@@ -18,7 +16,7 @@ const AdminProfesores = () => {
     const fetchProfesores = async () => {
       try {
         setLoading(true);
-        const response = await axiosInstance.get(`${API_URL}/profesores`);
+        const response = await axiosInstance.get('/profesores');
         if (response.data.status === 'success') {
           setProfesores(response.data.data);
         }
@@ -63,7 +61,7 @@ const AdminProfesores = () => {
   
       if (formValues) {
         try {
-          const response = await axiosInstance.post(`${API_URL}/profesores`, formValues);
+          const response = await axiosInstance.post('/profesores', formValues);
           
           if (response.data.status === 'success') {
             await Swal.fire({
@@ -117,7 +115,7 @@ const AdminProfesores = () => {
 
         if (formValues) {
             try {
-                const response = await axiosInstance.put(`${API_URL}/profesores/${profesor.id}`, formValues);
+                const response = await axiosInstance.put(`/profesores/${profesor.id}`, formValues);
 
                 if (response.data.status === 'success') {
                     await Swal.fire({
@@ -140,7 +138,7 @@ const AdminProfesores = () => {
 
     const handleViewProfesor = async (id) => {
         try {
-            const response = await axiosInstance.get(`${API_URL}/profesores/${id}/detalle`);
+            const response = await axiosInstance.get(`/profesores/${id}/detalle`);
             if (response.data.status === 'success') {
                 const profesor = response.data.profesor;
                 
@@ -241,7 +239,7 @@ const AdminProfesores = () => {
   
       if (result.isConfirmed) {
           try {
-              const response = await axiosInstance.delete(`${API_URL}/profesores/${id}`);
+              const response = await axiosInstance.delete(`/profesores/${id}`);
               if (response.data.status === 'success') {
                   await Swal.fire({
                       icon: 'success',

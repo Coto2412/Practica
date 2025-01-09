@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from "../components/navbar";
-import axios from 'axios'; 
 import Swal from 'sweetalert2';
 import axiosInstance from '../config/axiosConfig';
 import { useNavigate } from 'react-router-dom';
@@ -12,8 +11,6 @@ const AluTitulos = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const API_URL = 'http://localhost:5000/api';
-
   useEffect(() => {
     fetchProyectos();
   }, []);
@@ -21,7 +18,7 @@ const AluTitulos = () => {
   const fetchProyectos = async () => {
     try {
         setLoading(true);
-        const response = await axios.get(`${API_URL}/proyectos`);
+        const response = await axiosInstance.get('/proyectos');
         if (response.data.status === 'success') {
             
             const transformedData = response.data.data.map(item => ({
@@ -44,7 +41,7 @@ const AluTitulos = () => {
 
   const handleView = async (id) => {
     try {
-      const response = await axios.get(`${API_URL}/proyectos/${id}`);
+      const response = await axiosInstance.get(`/proyectos/${id}`);
       if (response.data.status === 'success') {
         const proyecto = response.data.proyecto;
         

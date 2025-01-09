@@ -42,7 +42,6 @@ const LoginPage = () => {
         localStorage.setItem('token', data.access_token);
         localStorage.setItem('userData', JSON.stringify(data.secretaria));
         
-        // Redireccionar a ProyectosTitulo
         navigate('/ProyectosTitulo');
       } else {
         setError(data.error || 'Error al iniciar sesión');

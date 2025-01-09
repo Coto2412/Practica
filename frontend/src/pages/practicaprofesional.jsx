@@ -13,7 +13,6 @@ const PracticaProfesional = () => {
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'accordion'
 
-  const API_URL = 'http://localhost:5000/api';
 
   useEffect(() => {
     fetchPracticas();
@@ -22,7 +21,7 @@ const PracticaProfesional = () => {
   const fetchPracticas = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`${API_URL}/practicas/profesional`);
+      const response = await axiosInstance.get('/practicas/profesional');
       if (response.data.status === 'success') {
         console.log('Datos recibidos:', response.data.data); // Agregar este log
         setPracticas(response.data.data);
@@ -49,7 +48,7 @@ const PracticaProfesional = () => {
       });
 
       if (result.isConfirmed) {
-        const response = await axiosInstance.delete(`${API_URL}/practicas/${id}`);
+        const response = await axiosInstance.delete(`/practicas/${id}`);
         if (response.data.status === 'success') {
           Swal.fire('Eliminado', 'La práctica ha sido eliminada.', 'success');
           fetchPracticas();
@@ -139,7 +138,6 @@ const PracticaProfesional = () => {
                 handleDelete={handleDelete}
                 fetchPracticas={fetchPracticas}
                 axiosInstance={axiosInstance}
-                API_URL={API_URL}
                 tipoPractica="profesional"
               />
             ) : (
@@ -187,7 +185,7 @@ const PracticaProfesional = () => {
 
                                   if (result.isConfirmed) {
                                     try {
-                                      const response = await axiosInstance.put(`${API_URL}/practicas/${practica.id}`, {
+                                      const response = await axiosInstance.put(`/practicas/${practica.id}`, {
                                         ...practica,
                                         nota: null
                                       });
@@ -267,7 +265,7 @@ const PracticaProfesional = () => {
                                   const handleDownload = async (type) => {
                                     try {
                                       const response = await axiosInstance.get(
-                                        `${API_URL}/documentos/descargar/${type}/${practica.id}`,
+                                        `/documentos/descargar/${type}/${practica.id}`,
                                         { responseType: 'blob' }
                                       );
                                       
@@ -299,7 +297,7 @@ const PracticaProfesional = () => {
                                     if (result.isConfirmed) {
                                       try {
                                         const response = await axiosInstance.delete(
-                                          `${API_URL}/documentos/${type}/${practica.id}`
+                                          `/documentos/${type}/${practica.id}`
                                         );
                                         
                                         if (response.data.status === 'success') {
