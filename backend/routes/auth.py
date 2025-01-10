@@ -70,7 +70,7 @@ def login_secretaria():
                 'status': 'error'
             }), 401
         
-        access_token = create_access_token(identity=secretaria.id)
+        access_token = create_access_token(identity=str(secretaria.id))
         
         return jsonify({
             'message': 'Inicio de sesión exitoso',

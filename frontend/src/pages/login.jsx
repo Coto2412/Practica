@@ -38,7 +38,6 @@ const LoginPage = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Guardar el token en localStorage
         localStorage.setItem('token', data.access_token);
         localStorage.setItem('userData', JSON.stringify(data.secretaria));
         
@@ -72,12 +71,12 @@ const LoginPage = () => {
         </div>
         
         {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded" role="alert">
             {error}
           </div>
         )}
 
-        <form className="mt-8" onSubmit={handleSubmit}>
+        <form className="mt-8" onSubmit={handleSubmit} noValidate>
           <div className="mb-6">
             <label
               htmlFor="email"
@@ -88,6 +87,8 @@ const LoginPage = () => {
             <input
               type="email"
               id="email"
+              name="email"
+              autoComplete="username"
               value={formData.email}
               onChange={handleChange}
               className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring focus:ring-blue-500"
@@ -105,6 +106,8 @@ const LoginPage = () => {
             <input
               type="password"
               id="password"
+              name="password"
+              autoComplete="current-password"
               value={formData.password}
               onChange={handleChange}
               className="w-full p-3 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring focus:ring-blue-500"

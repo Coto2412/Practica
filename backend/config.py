@@ -1,5 +1,6 @@
 from os import environ
 from dotenv import load_dotenv
+from datetime import timedelta
 
 load_dotenv()
 
@@ -8,7 +9,10 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = 'infuct1234'
     JWT_SECRET_KEY = 'infuctsecret24'
-    JWT_ACCESS_TOKEN_EXPIRES = 24 * 60 * 60
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
+    JWT_HEADER_NAME = 'Authorization'
+    JWT_HEADER_TYPE = 'Bearer'
+    JWT_IDENTITY_CLAIM = 'sub'
     
     CORS_ORIGINS = [
         "http://localhost:5173",
